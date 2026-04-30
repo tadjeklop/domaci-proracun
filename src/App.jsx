@@ -118,9 +118,12 @@ function CalcInput({defaultValue,onResult,style:stl,placeholder}){
     {showCalc&&<div style={{position:"absolute",top:"100%",left:0,zIndex:20,background:"#fff",border:`1px solid ${C.bd}`,borderRadius:8,padding:10,minWidth:220,boxShadow:"0 4px 16px rgba(0,0,0,0.12)"}}>
       <div style={{fontSize:11,fontWeight:600,marginBottom:4}}>Seštevanje postavk</div>
       <div style={{fontSize:10,color:C.mt,marginBottom:6}}>Dodaj posamezne zneske — seštejejo se avtomatsko.</div>
-      {items.map((it,i)=><div key={i} style={{display:"flex",justifyContent:"space-between",fontSize:11,padding:"2px 0",borderBottom:`1px solid ${C.fn}`}}>
-        <span style={{color:C.mt}}>{it.desc}</span>
-        <span style={{fontWeight:500}}>{fmt(it.amount)}</span>
+      {items.map((it,i)=><div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",fontSize:11,padding:"4px 0",borderBottom:`1px solid ${C.fn}`}}>
+        <div style={{display:"flex",alignItems:"center",gap:4,flex:1}}>
+          <span style={{color:C.mt,flex:1}}>{it.desc}</span>
+          <span style={{fontWeight:600,minWidth:50,textAlign:"right"}}>{fmt(it.amount)}</span>
+        </div>
+        <button type="button" onClick={()=>setItems(items.filter((_,idx)=>idx!==i))} style={{background:"none",border:"none",color:C.rd,cursor:"pointer",padding:"0 4px",fontSize:14,fontWeight:600}}>×</button>
       </div>)}
       <div style={{display:"flex",gap:4,marginTop:4}}>
         <input style={{...sI,flex:1,height:24,fontSize:11}} value={newItem} onChange={e=>setNewItem(e.target.value)} onKeyDown={e=>{if(e.key==='Enter')addItemToList()}} placeholder="znesek ali 23+15"/>

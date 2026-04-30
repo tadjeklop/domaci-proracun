@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run *)",
+      "Bash(netstat -tuln)",
+      "Bash(curl -s http://localhost:5173)",
+      "mcp__Claude_in_Chrome__tabs_context_mcp",
+      "mcp__Claude_in_Chrome__switch_browser",
+      "Bash(curl -s http://localhost:5173/)",
+      "Bash(pkill -f \"npm run dev\")",
+      "Bash(awk '{print $2}')",
+      "Bash(xargs kill *)",
+      "Bash(grep -n \"IT\\\\\\\\.map\\\\|KU\\\\\\\\.map\\\\|\\\\.map.*IT\\\\|\\\\.map.*KU\" src/App.jsx)",
+      "mcp__Claude_Preview__preview_start",
+      "Read(//d//**)",
+      "Bash(npm list *)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)"
+    ]
+  }
+}
