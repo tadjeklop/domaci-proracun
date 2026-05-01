@@ -40,7 +40,7 @@ const AS=CATS.flatMap(c=>c.subs);
 function fmt(n){return new Intl.NumberFormat("sl-SI",{style:"currency",currency:"EUR",minimumFractionDigits:0,maximumFractionDigits:0}).format(n||0)}
 function fN(n){return new Intl.NumberFormat("sl-SI",{minimumFractionDigits:0,maximumFractionDigits:0}).format(n||0)}
 function pc(a,b){return b===0?0:Math.round((a/b)*100)}
-function initM(){const s={};AS.forEach(sub=>{s[sub.id]={plan:sub.dp,actual:0,comment:""}});return{subs:s,income:{Kristina:{},Tadej:{}},customIncome:[],unexpectedItems:[],closed:false}}
+function initM(){const s={};AS.forEach(sub=>{s[sub.id]={plan:sub.dp,actual:0,transactions:[],comment:""}});return{subs:s,income:{Kristina:{},Tadej:{}},customIncome:[],unexpectedItems:[],closed:false}}
 function initY(){const y={};for(let i=0;i<12;i++)y[i]=initM();return y}
 function ld(k,fb){try{const s=localStorage.getItem(k);return s?JSON.parse(s):fb}catch{return fb}}
 function sv(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch{}}
@@ -49,6 +49,26 @@ function fxT(md,f){return CATS.filter(c=>c.tp==="fixed").reduce((s,c)=>s+cT(md,c
 function vrT(md,f){return CATS.filter(c=>c.tp==="var").reduce((s,c)=>s+cT(md,c,f),0)}
 function iT(md){let t=0;Object.values(md?.income?.Kristina||{}).forEach(v=>t+=(v||0));Object.values(md?.income?.Tadej||{}).forEach(v=>t+=(v||0));(md?.customIncome||[]).forEach(ci=>t+=(ci.amount||0));return t}
 function pctDiff(plan,actual){if(!plan)return"N/A";const d=pc(actual,plan);return d+"%"}
+function uxtT(md){return(md?.unexpectedItems||[]).reduce((s,it)=>s+(it.amount||0),0)}
+function simTooltip(metric,closedCount,yrInc,yrExp,yrUxt,yrSav,tInc,tAc,tUxt,simManual,baseInc,baseExp,baseSav,simG,simI,simE,year,sY){
+  const closedCountInfo=closedCount>0?` (${closedCount} zaključenih mesecev)`:"";
+  if(metric==="Prihodki"){
+    const source=simManual.income!=null?"ročni vnos":closedCount>0?`povprečje zaključenih mesecev: ${fmt(yrInc/closedCount)}/mesec${closedCountInfo}`:`privzetka: ${fmt(tInc||3600)}/mesec`;
+    const growth=simG!==0?` z rastjo ${simG}%/leto`:"";
+    return `Izračun: ${source} × ${Math.pow(1+simG/100,year).toFixed(2)} (rast) × 12 mesecev = ${fmt(baseInc*Math.pow(1+simG/100,year)*12)}${growth}`;
+  }else if(metric==="Odhodki"){
+    const base=closedCount>0?yrExp+yrUxt:tAc+(tUxt||0);
+    const perMonth=closedCount>0?`${fmt((yrExp+yrUxt)/closedCount)}/mesec${closedCountInfo}`:`${fmt(tAc||3100)}/mesec`;
+    const source=simManual.expense!=null?"ročni vnos":closedCount>0?`povprečje zaključenih mesecev: ${perMonth}`:`privzetka: ${perMonth}`;
+    const growth=simI!==0?` z inflacijo ${simI}%/leto`:"";
+    return `Izračun: ${source} × ${Math.pow(1+simI/100,year).toFixed(2)} (inflacija) × 12 mesecev = ${fmt(baseExp*Math.pow(1+simI/100,year)*12)}${growth}`;
+  }else if(metric==="Prihranki"){
+    return `Skupni prihranki: seštevek letnih varčevanj (${fmt(baseSav)}/mesec × 12). Če so dodatne naložbe (${simE}€), je vključeno v vsako leto.`;
+  }else if(metric==="Razlika"){
+    return `Letni tok gotovine: Prihodki - Odhodki. Pozitivna = presežek, negativna = primanjkljaj. Uporablja se za izračun finančnega zdravja.`;
+  }
+  return "Izračun ni dostopen";
+}
 
 // ===== STYLES =====
 const C={bg:"#f8f7f4",cd:"#fff",bd:"#e8e6e1",mt:"#888",fn:"#f5f5f0",gn:"#059669",rd:"#dc2626",bl:"#2563eb",pu:"#7c3aed",or:"#d97706",tx:"#1a1a2e",sb:"#555"};
@@ -184,6 +204,32 @@ async function ensureSuperadmin(){
   }
 }
 
+// ===== CATEGORY ENTRY COMPONENT =====
+function CatEntry({cats,title,md,subVis,expandBreakdown,txnInput,toggleSubVis,setExpandBreakdown,setTxnInput,addTransaction,removeTransaction,updateTransactionComment,uSub}){return<div><div style={{fontSize:16,fontWeight:700,color:C.tx,marginBottom:4,marginTop:6}}>{title}</div><div style={sC}>
+  <div style={{display:"grid",gridTemplateColumns:"1fr 55px 55px 45px 40px",gap:6,fontSize:18,color:C.mt,fontWeight:600,padding:"0 0 4px",borderBottom:`1px solid ${C.bd}`}}><span>Postavka</span><span>Plan</span><span>Izvedba</span><span>Razl.€</span><span>%</span></div>
+  {cats.map(cat=><React.Fragment key={cat.id}>
+    <div style={{fontSize:17,fontWeight:700,color:C.tx,padding:"5px 0 2px",marginTop:2,paddingLeft:0}}>{cat.nm}</div>
+    {cat.subs.filter(sub=>subVis[sub.id]!==true).map(sub=>{const d=md.subs?.[sub.id]||{plan:0,actual:0,transactions:[],comment:""};const diff=d.plan-d.actual;const pct=d.plan?pc(d.actual,d.plan)+"%":"—";const isExp=expandBreakdown[sub.id];const txnAmt=(txnInput[sub.id]&&typeof txnInput[sub.id]==='object')?txnInput[sub.id].amt:(txnInput[sub.id]||"");const txnCmt=(txnInput[sub.id]&&typeof txnInput[sub.id]==='object')?txnInput[sub.id].cmt:"";
+      return<React.Fragment key={sub.id}><div style={{display:"grid",gridTemplateColumns:"1fr 55px 55px 45px 40px",gap:6,fontSize:16,alignItems:"center",padding:"2px 0 2px 10px",borderBottom:`1px solid ${C.fn}`}}>
+        <div style={{display:"flex",alignItems:"center",gap:3,fontSize:18}}><span>{sub.nm}</span><button type="button" onClick={()=>toggleSubVis(sub.id)} style={{background:"none",border:"none",cursor:"pointer",padding:0,fontSize:18,color:C.mt,flexShrink:0}}>👁</button></div>
+        <span style={{color:"#999",fontSize:18,textAlign:"right"}}>{d.plan?fN(d.plan):"—"}</span>
+        <button type="button" onClick={(e)=>{e.preventDefault();setExpandBreakdown(p=>({...p,[sub.id]:!isExp}))}} style={{background:"none",border:`1px solid ${C.bd}`,borderRadius:4,padding:"2px 4px",fontSize:14,color:C.tx,cursor:"pointer",textAlign:"right",minWidth:45,height:24}}>{fN(d.actual||0)}€ {isExp?"▲":"▼"}</button>
+        <span style={{fontSize:11,color:d.plan?(diff>=0?C.gn:C.rd):C.mt,textAlign:"right"}}>{d.plan?(diff>=0?"+":"")+fN(diff):"—"}</span>
+        <span style={{fontSize:11,color:d.plan?(pc(d.actual,d.plan)>90?C.rd:C.gn):C.mt,textAlign:"right"}}>{pct}</span>
+      </div>{isExp&&<div style={{padding:"12px 10px",background:"#f9fafb",marginLeft:"10px",borderLeft:`3px solid ${C.bl}`,borderRadius:"0 4px 4px 0",marginTop:2,marginBottom:6}}><div style={{fontSize:13,fontWeight:600,marginBottom:8,color:C.tx}}>Razčlenitev - {sub.nm}</div><div style={{marginBottom:10}}>
+        {(d.transactions||[]).map((t,idx)=>{const txnId=t.id||idx;const amt=t.amt||t;const cmt=t.comment||"";return<div key={txnId} style={{display:"grid",gridTemplateColumns:"80px 1fr auto",gap:8,alignItems:"center",fontSize:14,padding:"6px 8px",background:"#fff",borderRadius:4,marginBottom:4,border:`1px solid ${C.bd}`}}>
+          <span style={{fontWeight:600,color:C.tx}}>{fN(amt)}€</span>
+          <input style={{...sI,height:28,fontSize:13,padding:"4px 8px"}} defaultValue={cmt} onBlur={e=>updateTransactionComment&&updateTransactionComment(sub.id,txnId,e.target.value)} placeholder="Komentar (npr. trgovina, datum)"/>
+          <button type="button" onClick={(e)=>{e.preventDefault();e.stopPropagation();removeTransaction(sub.id,txnId)}} style={{background:"none",border:"none",color:C.rd,cursor:"pointer",padding:"2px 6px",fontSize:14,fontWeight:600}}>✕</button>
+        </div>})}
+        {(d.transactions||[]).length===0&&<div style={{fontSize:13,color:C.mt,padding:"8px",textAlign:"center",background:"#fff",borderRadius:4,border:`1px dashed ${C.bd}`,fontStyle:"italic"}}>Še nobene transakcije</div>}
+      </div><div style={{display:"grid",gridTemplateColumns:"110px 1fr auto",gap:6,marginBottom:6,alignItems:"center"}}>
+        <input id={`txn-${sub.id}`} type="number" placeholder="Znesek (€)" onChange={(e)=>setTxnInput(p=>({...p,[sub.id]:{amt:e.target.value,cmt:txnCmt}}))} value={txnAmt} onKeyPress={(e)=>{if(e.key==="Enter"){e.preventDefault();e.stopPropagation();const val=parseFloat(txnAmt);if(val>0){addTransaction(sub.id,txnAmt,txnCmt);setTxnInput(p=>({...p,[sub.id]:""}))}return false}}} style={{...sI,height:36,fontSize:14,padding:"6px 10px"}}/>
+        <input type="text" placeholder="Komentar (neobvezno)" onChange={(e)=>setTxnInput(p=>({...p,[sub.id]:{amt:txnAmt,cmt:e.target.value}}))} value={txnCmt} onKeyPress={(e)=>{if(e.key==="Enter"){e.preventDefault();e.stopPropagation();const val=parseFloat(txnAmt);if(val>0){addTransaction(sub.id,txnAmt,txnCmt);setTxnInput(p=>({...p,[sub.id]:""}))}return false}}} style={{...sI,height:36,fontSize:14,padding:"6px 10px"}}/>
+        <button type="button" onClick={(e)=>{e.preventDefault();e.stopPropagation();const val=parseFloat(txnAmt);if(val>0){addTransaction(sub.id,txnAmt,txnCmt);setTxnInput(p=>({...p,[sub.id]:""}))}return false}} style={{...sB(true),padding:"6px 16px",height:36,fontSize:14,fontWeight:600}}>Dodaj</button>
+      </div><div style={{textAlign:"right",fontSize:12,fontWeight:600,color:C.tx,padding:"4px 0"}}>Skupaj: <span style={{fontSize:16,color:C.bl}}>{fN(d.actual||0)}€</span></div></div>}</React.Fragment>})}
+  </React.Fragment>)}</div></div>}
+
 // ===== MAIN APP =====
 export default function App(){
   const[ready,setReady]=useState(false);
@@ -222,11 +268,19 @@ export default function App(){
   const[annualDetailMonth,setAnnualDetailMonth]=useState(null); // month selected in letni pregled for detail view
   const[adminViews,setAdminViews]=useState(()=>ld('dp_adminviews',CATS.map(c=>c.id))); // cats visible to admin
   const[subVis,setSubVis]=useState(()=>ld('dp_subvis',{})); // subcategory visibility
+  const[expandBreakdown,setExpandBreakdown]=useState({}); // which subcategory breakdowns are expanded
+  const[txnInput,setTxnInput]=useState({}); // transaction input values per subcategory
   const[auditLog,setAuditLog]=useState(()=>ld('dp_audit',[]));
   const[adminConf,setAdminConf]=useState(()=>ld('dp_adminconf',{Kristina:{varsav:true,crypto:true,settings:true}}));
+  const[hoveredMetric,setHoveredMetric]=useState(null); // for showing visible tooltips
   // Savings section
   const[savUnlocked,setSavUnlocked]=useState(false);const[savPwd,setSavPwd]=useState('');
   const[savData,setSavData]=useState(()=>ld('dp_savdata',{members:[]}));
+  // Wishlist section
+  const[wishes,setWishes]=useState(()=>ld('dp_wishes',[]));
+  const[occasions,setOccasions]=useState(()=>ld('dp_occasions',["Rojstni dan","Novo leto","Božič","Obletnica","Drugi praznik"]));
+  const[wishForm,setWishForm]=useState({member:"Tadej",wish:"",desc:"",link:"",comment:""});
+  const WISH_MEMBERS=["Tadej","Kristina","Leon","Erik"];
   // Editable lists
   const[itList,setItList]=useState(()=>ld('dp_it',["Plača","Nagrada","Regres","Božičnica","Otroški dodatek","Porodniška","Refund"]));
   const[kuList,setKuList]=useState(()=>ld('dp_ku',["Amazon","HM","About You","Sports Direct","Mohito","Notino","Stradivarius","Grand Hotel Bernardin","Best Secret","Equa","Lelosi","DDStepOnline","Fever vstopnice"]));
@@ -234,9 +288,10 @@ export default function App(){
   const[sNP,setSNP]=useState('');const[sNP2,setSNP2]=useState('');const[sCP,setSCP]=useState('');const[sMsg,setSMsg]=useState('');
 
   // Persist
-  useEffect(()=>{sv('dp_data',data)},[data]);useEffect(()=>{sv('dp_log',cLog.slice(0,200))},[cLog]);useEffect(()=>{sv('dp_goals',goals)},[goals]);useEffect(()=>{sv('dp_cry',cryH)},[cryH]);useEffect(()=>{sv('dp_pct',bPct)},[bPct]);useEffect(()=>{sv('dp_pm',pMd)},[pMd]);useEffect(()=>{sv('dp_pf',pFx)},[pFx]);useEffect(()=>{sv('dp_sv',savVis)},[savVis]);useEffect(()=>{sv('dp_mb',manualBudget)},[manualBudget]);useEffect(()=>{sv('dp_savdata',savData)},[savData]);useEffect(()=>{sv('dp_pending',pendingRegs)},[pendingRegs]);useEffect(()=>{sv('dp_simman',simManual)},[simManual]);useEffect(()=>{sv('dp_simcats',simCats)},[simCats]);useEffect(()=>{sv('dp_adminviews',adminViews)},[adminViews]);useEffect(()=>{sv('dp_subvis',subVis)},[subVis]);useEffect(()=>{sv('dp_audit',auditLog.slice(0,500))},[auditLog]);useEffect(()=>{sv('dp_adminconf',adminConf)},[adminConf]);useEffect(()=>{sv('dp_it',itList)},[itList]);useEffect(()=>{sv('dp_ku',kuList)},[kuList]);
+  useEffect(()=>{sv('dp_data',data)},[data]);useEffect(()=>{sv('dp_log',cLog.slice(0,200))},[cLog]);useEffect(()=>{sv('dp_goals',goals)},[goals]);useEffect(()=>{sv('dp_cry',cryH)},[cryH]);useEffect(()=>{sv('dp_pct',bPct)},[bPct]);useEffect(()=>{sv('dp_pm',pMd)},[pMd]);useEffect(()=>{sv('dp_pf',pFx)},[pFx]);useEffect(()=>{sv('dp_sv',savVis)},[savVis]);useEffect(()=>{sv('dp_mb',manualBudget)},[manualBudget]);useEffect(()=>{sv('dp_savdata',savData)},[savData]);useEffect(()=>{sv('dp_pending',pendingRegs)},[pendingRegs]);useEffect(()=>{sv('dp_simman',simManual)},[simManual]);useEffect(()=>{sv('dp_simcats',simCats)},[simCats]);useEffect(()=>{sv('dp_adminviews',adminViews)},[adminViews]);useEffect(()=>{sv('dp_subvis',subVis)},[subVis]);useEffect(()=>{sv('dp_audit',auditLog.slice(0,500))},[auditLog]);useEffect(()=>{sv('dp_adminconf',adminConf)},[adminConf]);useEffect(()=>{sv('dp_it',itList)},[itList]);useEffect(()=>{sv('dp_ku',kuList)},[kuList]);useEffect(()=>{sv('dp_wishes',wishes)},[wishes]);useEffect(()=>{sv('dp_occasions',occasions)},[occasions]);
 
   useEffect(()=>{if(authSt==='init'){if(sessionStorage.getItem('dp_s')){setAuthSt('auth');setCurUser(sessionStorage.getItem('dp_u'));setCurRole(sessionStorage.getItem('dp_r'))}else setAuthSt('login')}},[]);
+
   const lastAct=useRef(Date.now());
   useEffect(()=>{if(authSt!=='auth')return;const r=()=>{lastAct.current=Date.now()};const c=setInterval(()=>{if(Date.now()-lastAct.current>30*60*1000){setAuthSt('login');setCurUser(null);setCurRole(null);sessionStorage.clear();setAErr('Seja potekla.')}},10000);window.addEventListener('mousemove',r);window.addEventListener('keydown',r);return()=>{clearInterval(c);window.removeEventListener('mousemove',r);window.removeEventListener('keydown',r)}},[authSt]);
 
@@ -253,7 +308,10 @@ export default function App(){
   const uxtT=(mdata)=>(mdata.unexpectedItems||[]).reduce((s,it)=>s+it.amount,0);
   const tInc=iT(md);const tFx=fxT(md,'actual');const tVr=vrT(md,'actual');const tUxt=uxtT(md);const tAc=tFx+tVr+tUxt;
 
-  const uSub=(subId,field,val)=>{setData(prev=>{const n=JSON.parse(JSON.stringify(prev));if(!n[yr])n[yr]=initY();if(!n[yr][mo])n[yr][mo]=initM();if(!n[yr][mo].subs[subId])n[yr][mo].subs[subId]={plan:0,actual:0,comment:""};const old=n[yr][mo].subs[subId][field];n[yr][mo].subs[subId][field]=field==="comment"?val:(parseFloat(val)||0);if(field==="plan"&&parseFloat(val)!==old)setCLog(l=>[{date:new Date().toLocaleDateString("sl-SI"),sub:subId,oldVal:old||0,newVal:parseFloat(val)||0,who:curUser||"?"},...l]);return n})};
+  const uSub=(subId,field,val)=>{setData(prev=>{const n=JSON.parse(JSON.stringify(prev));if(!n[yr])n[yr]=initY();if(!n[yr][mo])n[yr][mo]=initM();if(!n[yr][mo].subs[subId])n[yr][mo].subs[subId]={plan:0,actual:0,transactions:[],comment:""};const old=n[yr][mo].subs[subId][field];n[yr][mo].subs[subId][field]=field==="comment"?val:(parseFloat(val)||0);if(field==="plan"&&parseFloat(val)!==old)setCLog(l=>[{date:new Date().toLocaleDateString("sl-SI"),sub:subId,oldVal:old||0,newVal:parseFloat(val)||0,who:curUser||"?"},...l]);return n})};
+  const addTransaction=(subId,amount,comment="")=>{setData(prev=>{const n=JSON.parse(JSON.stringify(prev));if(!n[yr])n[yr]=initY();if(!n[yr][mo])n[yr][mo]=initM();if(!n[yr][mo].subs[subId])n[yr][mo].subs[subId]={plan:0,actual:0,transactions:[],comment:""};if(!Array.isArray(n[yr][mo].subs[subId].transactions))n[yr][mo].subs[subId].transactions=[];const amt=parseFloat(amount)||0;if(amt>0){const txnId=Date.now()+Math.random();n[yr][mo].subs[subId].transactions.push({id:txnId,amt,comment:comment||""});n[yr][mo].subs[subId].actual=n[yr][mo].subs[subId].transactions.reduce((s,t)=>s+(t.amt||t),0)}return n})};
+  const updateTransactionComment=(subId,txnId,comment)=>{setData(prev=>{const n=JSON.parse(JSON.stringify(prev));if(n[yr]&&n[yr][mo]&&n[yr][mo].subs[subId]&&Array.isArray(n[yr][mo].subs[subId].transactions)){n[yr][mo].subs[subId].transactions=n[yr][mo].subs[subId].transactions.map(t=>{const id=typeof t==='object'?t.id:t;return id===txnId?{...(typeof t==='object'?t:{id:t,amt:t}),comment}:t})}return n})};
+  const removeTransaction=(subId,txnId)=>{setData(prev=>{const n=JSON.parse(JSON.stringify(prev));if(n[yr]&&n[yr][mo]&&n[yr][mo].subs[subId]){if(!Array.isArray(n[yr][mo].subs[subId].transactions))n[yr][mo].subs[subId].transactions=[];n[yr][mo].subs[subId].transactions=n[yr][mo].subs[subId].transactions.filter(t=>{const id=typeof t==='object'?t.id:t;return id!==txnId});n[yr][mo].subs[subId].actual=n[yr][mo].subs[subId].transactions.reduce((s,t)=>s+(t.amt||t),0)}return n})};
   const uInc=(person,type,val)=>{setData(prev=>{const n=JSON.parse(JSON.stringify(prev));if(!n[yr])n[yr]=initY();if(!n[yr][mo])n[yr][mo]=initM();if(!n[yr][mo].income[person])n[yr][mo].income[person]={};n[yr][mo].income[person][type]=parseFloat(val)||0;return n})};
   const addCI=(l,a,p,c)=>{setData(prev=>{const n=JSON.parse(JSON.stringify(prev));if(!n[yr])n[yr]=initY();if(!n[yr][mo])n[yr][mo]=initM();n[yr][mo].customIncome.push({label:l,amount:parseFloat(a)||0,person:p,comment:c});return n})};
   const addUX=(d,a,p)=>{setData(prev=>{const n=JSON.parse(JSON.stringify(prev));if(!n[yr])n[yr]=initY();if(!n[yr][mo])n[yr][mo]=initM();n[yr][mo].unexpectedItems.push({desc:d,amount:parseFloat(a)||0,person:p});return n})};
@@ -271,14 +329,36 @@ export default function App(){
   const doImport=()=>{if(!impPrev)return;setData(prev=>{const n=JSON.parse(JSON.stringify(prev));if(!n[impYr])n[impYr]=initY();impPrev.preview.forEach(r=>{if(!n[impYr][r.mi])n[impYr][r.mi]=initM();const lbl=r.label.toLowerCase();CATS.forEach(cat=>{cat.subs.forEach(sub=>{const sl=sub.nm.toLowerCase();if(lbl.includes(sl.substring(0,12))||sl.includes(lbl.substring(0,12))){n[impYr][r.mi].subs[sub.id]={plan:r.plan||r.actual,actual:r.actual,comment:""}}})});if(lbl==="kristina"||lbl==="tadej"){const p=lbl==="kristina"?"Kristina":"Tadej";if(!n[impYr][r.mi].income[p])n[impYr][r.mi].income[p]={};n[impYr][r.mi].income[p]["Plača"]=(n[impYr][r.mi].income[p]["Plača"]||0)+r.actual}});return n});setImpPrev(null);setImpLog([{type:"ok",msg:`Uvoženo v ${impYr}!`}])};
 
   // Simulation data - uses manual overrides, selected categories, closed months
-  const simData=(()=>{const sY=parseInt(simFrom.split("-")[0])||2026;const eY=parseInt(simTo.split("-")[0])||2029;const yrs=Math.max(1,eY-sY+1);
+  const simData=(()=>{
+    const sDate=new Date(simFrom);const eDate=new Date(simTo);
+    const sY=sDate.getFullYear();const eY=eDate.getFullYear();
+    const sM=sDate.getMonth();const eM=eDate.getMonth();
+    const yrs=Math.max(1,eY-sY+1);
+
     let yrInc=0,yrExp=0,yrUxt=0,yrSav=0,closedCount=0;
     for(let m=0;m<12;m++){const mdata=yd[m]||initM();if(mdata.closed){yrInc+=iT(mdata);const selCats=CATS.filter(c=>simCats.includes(c.id));yrExp+=selCats.reduce((s,c)=>s+cT(mdata,c,'actual'),0);yrUxt+=uxtT(mdata);yrSav+=cT(mdata,CATS.find(c=>c.id==="savings_inv")||{subs:[]},'actual');closedCount++}};
     const baseInc=simManual.income!=null?simManual.income:(closedCount>0?yrInc/closedCount:(tInc||3600));
     const baseExp=simManual.expense!=null?simManual.expense:(closedCount>0?(yrExp+yrUxt)/closedCount:(tAc||3100));
     const baseSav=simManual.savings!=null?simManual.savings:(closedCount>0?yrSav/closedCount:500);
+
     const r=[];
-    for(let i=0;i<yrs;i++){const ig=Math.pow(1+simG/100,i);const eg=Math.pow(1+simI/100,i);let yI=Math.round(baseInc*ig*12);let yE=Math.round(baseExp*eg*12);const yS=Math.round((baseSav+simE)*ig*12);const cum=r.length>0?r[r.length-1].Prihranki+yS:yS;simSc.forEach(sc=>{const curYr=sY+i;if(sc.type==="mortgage"&&curYr>=sc.year)yE+=sc.amount*12;if(sc.type==="raise"&&curYr>=sc.year)yI=Math.round(yI*(1+sc.pct/100));if(sc.type==="jobLoss"&&curYr===sc.year)yI=Math.round(yI*0.4);if(sc.type==="move"&&curYr>=sc.year)yE+=sc.amount*12});r.push({name:String(sY+i),Prihodki:yI,Odhodki:yE,Prihranki:cum,Razlika:yI-yE})}return r})();
+    for(let i=0;i<yrs;i++){
+      const curY=sY+i;
+      let mths=12;
+      if(i===0&&yrs>1)mths=13-sM;
+      else if(i===yrs-1&&yrs>1)mths=eM+1;
+      else if(yrs===1)mths=(eM-sM)+1;
+
+      const ig=Math.pow(1+simG/100,i);const eg=Math.pow(1+simI/100,i);
+      let yI=Math.round(baseInc*ig*mths);let yE=Math.round(baseExp*eg*mths);
+      const yS=Math.round((baseSav+simE)*ig*mths);
+      const cum=r.length>0?r[r.length-1].Prihranki+yS:yS;
+
+      simSc.forEach(sc=>{if(sc.type==="mortgage"&&curY>=sc.year)yE+=sc.amount*mths;if(sc.type==="raise"&&curY>=sc.year)yI=Math.round(yI*(1+sc.pct/100));if(sc.type==="jobLoss"&&curY===sc.year)yI=Math.round(yI*0.4);if(sc.type==="move"&&curY>=sc.year)yE+=sc.amount*mths});
+      r.push({name:String(curY),Prihodki:yI,Odhodki:yE,Prihranki:cum,Razlika:yI-yE})
+    }
+    return r
+  })();
 
   const pieData=visibleCats.map((c,i)=>({name:c.nm.split(" ")[0],value:cT(md,c,'actual'),color:CL[i%CL.length]})).filter(d=>d.value>0);
   const trendData=MS.map((m,i)=>{const mdata=yd[i]||initM();return{name:m,Prihodki:iT(mdata),Odhodki:fxT(mdata,'actual')+vrT(mdata,'actual')+uxtT(mdata),closed:mdata.closed}});
@@ -315,21 +395,6 @@ export default function App(){
   const YPk=<div style={{display:"flex",alignItems:"center",gap:4,flexWrap:"wrap"}}><span style={{fontSize:16,color:C.mt}}>Leto:</span><select style={{...sS,height:26,fontSize:17,width:70}} value={yr} onChange={e=>setYr(parseInt(e.target.value))}>{[2020,2021,2022,2023,2024,2025,2026,2027,2028].map(y=><option key={y} value={y}>{y}</option>)}</select></div>;
   const isClosed=md.closed;
 
-  // Category entry renderer with % difference and N/A
-  const CatEntry=({cats,title})=><div><div style={{fontSize:16,fontWeight:700,color:C.tx,marginBottom:4,marginTop:6}}>{title}</div><div style={sC}>
-    <div style={{display:"grid",gridTemplateColumns:"1fr 55px 55px 45px 40px 1fr",gap:6,fontSize:18,color:C.mt,fontWeight:600,padding:"0 0 4px",borderBottom:`1px solid ${C.bd}`}}><span>Postavka</span><span>Plan</span><span>Izvedba</span><span>Razl.€</span><span>%</span><span>Kom.</span></div>
-    {cats.map(cat=><React.Fragment key={cat.id}>
-      <div style={{fontSize:17,fontWeight:700,color:C.tx,padding:"5px 0 2px",marginTop:2,paddingLeft:0}}>{cat.nm}</div>
-      {cat.subs.filter(sub=>subVis[sub.id]!==true).map(sub=>{const d=md.subs?.[sub.id]||{plan:0,actual:0,comment:""};const diff=d.plan-d.actual;const pct=d.plan?pc(d.actual,d.plan)+"%":"—";
-        return<div key={sub.id} style={{display:"grid",gridTemplateColumns:"1fr 55px 55px 45px 40px 1fr",gap:6,fontSize:16,alignItems:"center",padding:"2px 0 2px 10px",borderBottom:`1px solid ${C.fn}`}}>
-          <div style={{display:"flex",alignItems:"center",gap:3,fontSize:18}}><span>{sub.nm}</span><button type="button" onClick={()=>toggleSubVis(sub.id)} style={{background:"none",border:"none",cursor:"pointer",padding:0,fontSize:18,color:C.mt,flexShrink:0}}>👁</button></div>
-          <span style={{color:"#999",fontSize:18,textAlign:"right"}}>{d.plan?fN(d.plan):"—"}</span>
-          <CalcInput defaultValue={d.actual||""} onResult={v=>uSub(sub.id,"actual",v)} style={{width:45,height:24,fontSize:16}} placeholder="0"/>
-          <span style={{fontSize:11,color:d.plan?(diff>=0?C.gn:C.rd):C.mt,textAlign:"right"}}>{d.plan?(diff>=0?"+":"")+fN(diff):"—"}</span>
-          <span style={{fontSize:11,color:d.plan?(pc(d.actual,d.plan)>90?C.rd:C.gn):C.mt,textAlign:"right"}}>{pct}</span>
-          <input style={{...sI,height:24,fontSize:18}} defaultValue={d.comment} onBlur={e=>uSub(sub.id,"comment",e.target.value)} placeholder=""/>
-        </div>})}
-    </React.Fragment>)}</div></div>;
 
   return<EB><div style={{fontFamily:"'Segoe UI',system-ui,sans-serif",color:C.tx,minHeight:"100vh",background:C.bg}}>
     {/* USER BAR */}
@@ -340,7 +405,7 @@ export default function App(){
     </div>
     {/* NAV */}
     <div style={{display:"flex",gap:0,background:C.tx,padding:"0 4px",overflowX:"auto"}}>
-      {[["dash","Nadzorna plošča"],["entry","Mesečni vnos"],["annual","Letni pregled"],["goals","Cilji"],["sim","Simulacija"],["pct","% razdelitev"],["varsav","Varčevanje"],["settings","Nastavitve"],["crypto","🔒"]].filter(([k,l])=>isSA||(k!=="varsav"&&k!=="settings"&&k!=="crypto")||(k==="varsav"&&adminConf[curUser]?.varsav)||(k==="settings"&&adminConf[curUser]?.settings)||(k==="crypto"&&adminConf[curUser]?.crypto)).map(([k,l])=>
+      {[["dash","Nadzorna plošča"],["entry","Mesečni vnos"],["annual","Letni pregled"],["goals","Cilji"],["sim","Simulacija"],["pct","% razdelitev"],["wishes","Željni seznam"],["varsav","Varčevanje"],["settings","Nastavitve"],["crypto","🔒"]].filter(([k,l])=>isSA||(k!=="varsav"&&k!=="settings"&&k!=="crypto"&&k!=="wishes")||(k==="varsav"&&adminConf[curUser]?.varsav)||(k==="settings"&&adminConf[curUser]?.settings)||(k==="crypto"&&adminConf[curUser]?.crypto)||(k==="wishes")).map(([k,l])=>
         <div key={k} style={{padding:"10px 10px",fontSize:17,fontWeight:vw===k?600:400,color:vw===k?"#f8f7f4":"#8888a0",cursor:"pointer",borderBottom:vw===k?"2px solid #60a5fa":"2px solid transparent",whiteSpace:"nowrap"}} onClick={()=>setVw(k)}>{l}</div>
       )}
     </div>
@@ -372,27 +437,60 @@ export default function App(){
       {/* Import */}
       {showImp&&<div style={{...sC,background:"#f0f7ff",border:"1px dashed #93c5fd"}}><div style={{fontSize:18,fontWeight:600,color:C.bl,marginBottom:4}}>Uvozi iz Excel</div><div style={{display:"flex",gap:8,alignItems:"center",marginBottom:8,flexWrap:"wrap"}}><span style={{fontSize:17}}>V leto:</span><select style={{...sS,width:70}} value={impYr} onChange={e=>setImpYr(parseInt(e.target.value))}>{[2020,2021,2022,2023,2024,2025,2026,2027,2028].map(y=><option key={y} value={y}>{y}</option>)}</select><input type="file" accept=".xlsx,.xls" onChange={handleImpFile} style={{fontSize:18}}/></div>{impPrev&&<div style={{border:"1px solid #e8e6e1",borderRadius:6,padding:8,background:"#fff",maxHeight:160,overflowY:"auto",marginBottom:8}}><div style={{fontSize:17,fontWeight:600,marginBottom:4}}>Predogled ({impPrev.preview.length} vnosov → {impYr}):</div><table style={{width:"100%",fontSize:16,borderCollapse:"collapse"}}><thead><tr><th style={{textAlign:"left",padding:2}}>Mesec</th><th style={{textAlign:"left",padding:2}}>Postavka</th><th style={{textAlign:"right",padding:2}}>Izvedba</th></tr></thead><tbody>{impPrev.preview.slice(0,20).map((r,i)=><tr key={i}><td style={{padding:2}}>{r.month}</td><td style={{padding:2}}>{r.label.substring(0,25)}</td><td style={{textAlign:"right",padding:2}}>{fmt(r.actual)}</td></tr>)}</tbody></table><div style={{display:"flex",gap:6,marginTop:6}}><button style={sB(true)} onClick={doImport}>Potrdi uvoz</button><button style={sB(false)} onClick={()=>setImpPrev(null)}>Prekliči</button></div></div>}{impLog.map((l,i)=><div key={i} style={{fontSize:17,color:l.type==="ok"?C.gn:C.rd}}>{l.msg}</div>)}</div>}
 
-      {/* Metrics - Grouped for visual connection */}
-      <div style={{display:"grid",gridTemplateColumns:"1.2fr 1fr 1.2fr",gap:8,marginBottom:10}}>
-        {/* Income & Difference */}
-        <div style={{...sC,borderLeft:`4px solid ${C.gn}`}}><div style={{fontSize:11,color:C.mt,textTransform:"uppercase",letterSpacing:0.5,marginBottom:1}}>Prihodki</div><div style={{fontSize:24,fontWeight:700,color:C.gn,marginBottom:6}}>{fmt(tInc)}</div><div style={{fontSize:11,color:C.mt,textTransform:"uppercase",letterSpacing:0.5,marginBottom:1}}>Razlika</div><div style={{fontSize:16,fontWeight:700,color:tInc-tAc>=0?C.gn:C.rd}}>{tInc-tAc>=0?"+":""}{fmt(tInc-tAc)}</div></div>
-        {/* Expenses breakdown */}
-        <div style={{...sC,borderLeft:`4px solid ${C.rd}`}}><div style={{fontSize:11,color:C.mt,textTransform:"uppercase",letterSpacing:0.5,marginBottom:1}}>Odhodki</div><div style={{fontSize:24,fontWeight:700,color:C.rd,marginBottom:2}}>{fmt(tAc)}</div><div style={{fontSize:11,color:"#999",fontWeight:500,lineHeight:1.3}}>F {fmt(tFx)} | V {fmt(tVr)}{tUxt>0?` | N ${fmt(tUxt)}`:"" }</div></div>
-        {/* Savings */}
-        <div style={{...sC,borderLeft:`4px solid ${C.bl}`,position:"relative"}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:1}}><span style={{fontSize:11,color:C.mt,textTransform:"uppercase",letterSpacing:0.5}}>Varčevanje</span><span onClick={()=>setShowSavCfg(!showSavCfg)} style={{...sT("#dbeafe",C.bl),fontSize:14,cursor:"pointer",padding:"1px 5px"}}>⚙</span></div><div style={{fontSize:24,fontWeight:700,color:C.bl}}>{fmt(savVis.reduce((s,id)=>s+(md.subs?.[id]?.actual||0),0))}</div>{showSavCfg&&<div style={{position:"absolute",top:"100%",right:0,zIndex:20,background:"#fff",border:`1px solid ${C.bd}`,borderRadius:6,padding:8,minWidth:180,boxShadow:"0 2px 8px rgba(0,0,0,0.1)"}}>{CATS.find(c=>c.id==="savings_inv").subs.map(s=><label key={s.id} style={{display:"flex",alignItems:"center",gap:4,fontSize:16,padding:"2px 0",cursor:"pointer"}}><input type="checkbox" checked={savVis.includes(s.id)} onChange={e=>{if(e.target.checked)setSavVis(v=>[...v,s.id]);else setSavVis(v=>v.filter(x=>x!==s.id))}}/>{s.nm.substring(0,20)}</label>)}<button onClick={()=>setShowSavCfg(false)} style={{...sB(true),height:20,fontSize:18,marginTop:3,width:"100%"}}>OK</button></div>}</div>
+      {/* Top metrics */}
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:10}}>
+        {/* Left: Prihodki */}
+        <div style={{...sC,borderLeft:`4px solid ${C.gn}`}}><div style={{fontSize:11,color:C.mt,textTransform:"uppercase",letterSpacing:0.5,marginBottom:1}}>Prihodki</div><div style={{fontSize:28,fontWeight:700,color:C.gn}}>{fmt(tInc)}</div></div>
+        {/* Right: Odhodki total */}
+        <div style={{...sC,borderLeft:`4px solid ${C.rd}`}}><div style={{fontSize:11,color:C.mt,textTransform:"uppercase",letterSpacing:0.5,marginBottom:1}}>Odhodki skupaj</div><div style={{fontSize:28,fontWeight:700,color:C.rd}}>{fmt(tAc)}</div></div>
       </div>
 
-      {/* Plan by category - FIXED */}
-      <div style={{fontSize:16,fontWeight:700,color:C.tx,marginBottom:3,marginTop:8}}>Fiksni stroški</div>
-      <div style={sC}>{visibleCats.filter(c=>c.tp==="fixed").map(cat=>{const pT2=cT(md,cat,'plan');const aT2=cT(md,cat,'actual');const p2=pc(aT2,pT2);return<React.Fragment key={cat.id}><div style={{display:"flex",alignItems:"center",gap:4,padding:"3px 0",borderBottom:`1px solid ${C.fn}`,fontSize:16}}><span style={{flex:1,fontWeight:600}}>{cat.nm}</span>{editPlan&&<input style={{...sI,width:60,height:24,fontSize:16}} defaultValue={pT2||""} onBlur={e=>{const v=parseFloat(e.target.value)||0;if(cat.subs.length===1)uSub(cat.subs[0].id,"plan",v);else{const total=cat.subs.reduce((s,sub)=>s+sub.dp,0);cat.subs.forEach(sub=>{uSub(sub.id,"plan",total>0?Math.round(v*sub.dp/total):Math.round(v/cat.subs.length))})}}} placeholder="Plan €"/>}<span style={{color:"#999",minWidth:50,textAlign:"right",fontSize:18}}>{fmt(pT2)}</span><span style={{minWidth:50,textAlign:"right",fontSize:18,fontWeight:600}}>{fmt(aT2)}</span><span style={{minWidth:28,textAlign:"right",fontWeight:600,fontSize:18,color:pT2?(p2>90?C.rd:p2>70?C.or:C.gn):C.mt}}>{pT2?p2+"%":"—"}</span><div style={{width:45,height:3,borderRadius:1,background:"#eee",overflow:"hidden"}}><div style={{height:"100%",width:`${Math.min(p2,100)}%`,borderRadius:1,background:p2>90?C.rd:p2>70?C.or:C.gn}}/></div></div>
-        {editPlan&&cat.subs.map(sub=>{const sd=md.subs?.[sub.id]||{plan:0,actual:0};return<div key={sub.id} style={{display:"flex",alignItems:"center",gap:4,padding:"1px 0 1px 14px",borderBottom:`1px solid ${C.fn}`,fontSize:18,color:C.mt}}><span style={{flex:1}}>{sub.nm.substring(0,28)}</span><input style={{...sI,width:55,height:22,fontSize:18}} defaultValue={sd.plan||""} onBlur={e=>uSub(sub.id,"plan",e.target.value)} placeholder="€"/><span style={{minWidth:35,textAlign:"right"}}>{fN(sd.actual)}</span></div>})}
-      </React.Fragment>})}</div>
+      {/* Metrics split - Left: Fiksni, Right: Variabilni */}
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:10}}>
+        {/* Left Half: Fiksni stroški */}
+        <div>
+          <div style={{fontSize:16,fontWeight:700,color:C.tx,marginBottom:4}}>Fiksni stroški</div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
+            <div style={{...sC,borderLeft:`4px solid #d97706`}}><div style={{fontSize:11,color:C.mt,textTransform:"uppercase",letterSpacing:0.5,marginBottom:2}}>Planirano</div><div style={{fontSize:20,fontWeight:700}}>{fmt(CATS.filter(c=>c.tp==="fixed").reduce((s,c)=>s+cT(md,c,'plan'),0))}</div></div>
+            <div style={{...sC,borderLeft:`4px solid #d97706`}}><div style={{fontSize:11,color:C.mt,textTransform:"uppercase",letterSpacing:0.5,marginBottom:2}}>Izvedeno</div><div style={{fontSize:20,fontWeight:700}}>{fmt(tFx)}</div></div>
+          </div>
+        </div>
 
-      {/* Plan by category - VARIABLE */}
-      <div style={{fontSize:16,fontWeight:700,color:C.tx,marginBottom:3,marginTop:6}}>Variabilni stroški</div>
-      <div style={sC}>{visibleCats.filter(c=>c.tp==="var").map(cat=>{const pT2=cT(md,cat,'plan');const aT2=cT(md,cat,'actual');const p2=pc(aT2,pT2);return<React.Fragment key={cat.id}><div style={{display:"flex",alignItems:"center",gap:6,padding:"4px 0",borderBottom:`1px solid ${C.fn}`,fontSize:17}}><span style={{flex:1,fontWeight:600}}>{cat.nm}</span>{editPlan&&<input style={{...sI,width:70,height:26,fontSize:17}} defaultValue={pT2||""} onBlur={e=>{const v=parseFloat(e.target.value)||0;if(cat.subs.length===1)uSub(cat.subs[0].id,"plan",v);else if(cat.subs.length===0)return;else{const total=cat.subs.reduce((s,sub)=>s+sub.dp,0);cat.subs.forEach(sub=>{uSub(sub.id,"plan",total>0?Math.round(v*sub.dp/total):Math.round(v/cat.subs.length))})}}} placeholder="Plan €"/>}<span style={{color:"#999",minWidth:55,textAlign:"right"}}>{fmt(pT2)}</span><span style={{minWidth:55,textAlign:"right"}}>{fmt(aT2)}</span><span style={{minWidth:32,textAlign:"right",fontWeight:600,color:pT2?(p2>90?C.rd:p2>70?C.or:C.gn):C.mt}}>{pT2?p2+"%":"N/A"}</span><div style={{width:50,height:4,borderRadius:2,background:"#eee",overflow:"hidden"}}><div style={{height:"100%",width:`${Math.min(p2,100)}%`,borderRadius:2,background:p2>90?C.rd:p2>70?C.or:C.gn}}/></div></div>
-        {editPlan&&cat.subs.map(sub=>{const sd=md.subs?.[sub.id]||{plan:0,actual:0};return<div key={sub.id} style={{display:"flex",alignItems:"center",gap:6,padding:"2px 0 2px 16px",borderBottom:`1px solid ${C.fn}`,fontSize:16,color:C.mt}}><span style={{flex:1}}>{sub.nm.substring(0,30)}</span><input style={{...sI,width:60,height:22,fontSize:16}} defaultValue={sd.plan||""} onBlur={e=>uSub(sub.id,"plan",e.target.value)} placeholder="€"/><span style={{minWidth:40,textAlign:"right"}}>{fN(sd.actual)}</span></div>})}
-      </React.Fragment>})}</div>
+        {/* Right Half: Variabilni stroški */}
+        <div>
+          <div style={{fontSize:16,fontWeight:700,color:C.tx,marginBottom:4}}>Variabilni stroški</div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
+            <div style={{...sC,borderLeft:`4px solid #0891b2`}}><div style={{fontSize:11,color:C.mt,textTransform:"uppercase",letterSpacing:0.5,marginBottom:2}}>Planirano</div><div style={{fontSize:20,fontWeight:700}}>{fmt(CATS.filter(c=>c.tp==="var").reduce((s,c)=>s+cT(md,c,'plan'),0))}</div></div>
+            <div style={{...sC,borderLeft:`4px solid #0891b2`}}><div style={{fontSize:11,color:C.mt,textTransform:"uppercase",letterSpacing:0.5,marginBottom:2}}>Izvedeno</div><div style={{fontSize:20,fontWeight:700}}>{fmt(tVr)}</div></div>
+          </div>
+        </div>
+      </div>
+
+      {/* Bottom metrics: Razlika & Varčevanje */}
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:10}}>
+        {/* Razlika */}
+        <div style={{...sC,borderLeft:`4px solid ${tInc-tAc>=0?C.gn:C.rd}`}}><div style={{fontSize:11,color:C.mt,textTransform:"uppercase",letterSpacing:0.5,marginBottom:2}}>Razlika (Prihodki - Odhodki)</div><div style={{fontSize:24,fontWeight:700,color:tInc-tAc>=0?C.gn:C.rd}}>{tInc-tAc>=0?"+":""}{fmt(tInc-tAc)}</div></div>
+        {/* Savings */}
+        <div style={{...sC,borderLeft:`4px solid ${C.bl}`,position:"relative"}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:2}}><span style={{fontSize:11,color:C.mt,textTransform:"uppercase",letterSpacing:0.5}}>Varčevanje</span><span onClick={()=>setShowSavCfg(!showSavCfg)} style={{...sT("#dbeafe",C.bl),fontSize:14,cursor:"pointer",padding:"1px 5px"}}>⚙</span></div><div style={{fontSize:24,fontWeight:700,color:C.bl}}>{fmt(savVis.reduce((s,id)=>s+(md.subs?.[id]?.actual||0),0))}</div>{showSavCfg&&<div style={{position:"absolute",top:"100%",right:0,zIndex:20,background:"#fff",border:`1px solid ${C.bd}`,borderRadius:6,padding:8,minWidth:180,boxShadow:"0 2px 8px rgba(0,0,0,0.1)"}}>{CATS.find(c=>c.id==="savings_inv").subs.map(s=><label key={s.id} style={{display:"flex",alignItems:"center",gap:4,fontSize:16,padding:"2px 0",cursor:"pointer"}}><input type="checkbox" checked={savVis.includes(s.id)} onChange={e=>{if(e.target.checked)setSavVis(v=>[...v,s.id]);else setSavVis(v=>v.filter(x=>x!==s.id))}}/>{s.nm.substring(0,20)}</label>)}<button onClick={()=>setShowSavCfg(false)} style={{...sB(true),height:20,fontSize:18,marginTop:3,width:"100%"}}>OK</button></div>}</div>
+      </div>
+
+      {/* Plan by category - SIDE-BY-SIDE FIXED + VARIABLE */}
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginTop:8}}>
+        {/* LEFT: Fiksni stroški */}
+        <div>
+          <div style={{fontSize:16,fontWeight:700,color:C.tx,marginBottom:3}}>Fiksni stroški</div>
+          <div style={sC}>{visibleCats.filter(c=>c.tp==="fixed").map(cat=>{const pT2=cT(md,cat,'plan');const aT2=cT(md,cat,'actual');const p2=pc(aT2,pT2);return<React.Fragment key={cat.id}><div style={{display:"flex",alignItems:"center",gap:4,padding:"3px 0",borderBottom:`1px solid ${C.fn}`,fontSize:14}}><span style={{flex:1,fontWeight:600}}>{cat.nm}</span>{editPlan&&<input style={{...sI,width:55,height:22,fontSize:14}} defaultValue={pT2||""} onBlur={e=>{const v=parseFloat(e.target.value)||0;if(cat.subs.length===1)uSub(cat.subs[0].id,"plan",v);else{const total=cat.subs.reduce((s,sub)=>s+sub.dp,0);cat.subs.forEach(sub=>{uSub(sub.id,"plan",total>0?Math.round(v*sub.dp/total):Math.round(v/cat.subs.length))})}}} placeholder="€"/>}<span style={{color:"#999",minWidth:45,textAlign:"right",fontSize:14}}>{fmt(pT2)}</span><span style={{minWidth:45,textAlign:"right",fontSize:14,fontWeight:600}}>{fmt(aT2)}</span><span style={{minWidth:32,textAlign:"right",fontWeight:600,fontSize:13,color:pT2?(p2>90?C.rd:p2>70?C.or:C.gn):C.mt}}>{pT2?p2+"%":"—"}</span></div>
+            {cat.subs.filter(sub=>subVis[sub.id]!==true).map(sub=>{const sd=md.subs?.[sub.id]||{plan:0,actual:0};const sp=pc(sd.actual,sd.plan);return<div key={sub.id} style={{display:"flex",alignItems:"center",gap:4,padding:"2px 0 2px 12px",borderBottom:`1px solid ${C.fn}`,fontSize:13,color:"#666"}}><span style={{flex:1}}>{sub.nm}</span>{editPlan?<input style={{...sI,width:50,height:20,fontSize:13}} defaultValue={sd.plan||""} onBlur={e=>uSub(sub.id,"plan",e.target.value)} placeholder="€"/>:<span style={{color:"#999",minWidth:40,textAlign:"right"}}>{sd.plan?fN(sd.plan):"—"}</span>}<span style={{minWidth:40,textAlign:"right",fontWeight:500}}>{sd.actual?fN(sd.actual):"—"}</span><span style={{minWidth:28,textAlign:"right",fontSize:12,color:sd.plan?(sp>90?C.rd:sp>70?C.or:C.gn):C.mt}}>{sd.plan?sp+"%":"—"}</span></div>})}
+          </React.Fragment>})}</div>
+        </div>
+        {/* RIGHT: Variabilni stroški */}
+        <div>
+          <div style={{fontSize:16,fontWeight:700,color:C.tx,marginBottom:3}}>Variabilni stroški</div>
+          <div style={sC}>{visibleCats.filter(c=>c.tp==="var").map(cat=>{const pT2=cT(md,cat,'plan');const aT2=cT(md,cat,'actual');const p2=pc(aT2,pT2);return<React.Fragment key={cat.id}><div style={{display:"flex",alignItems:"center",gap:4,padding:"3px 0",borderBottom:`1px solid ${C.fn}`,fontSize:14}}><span style={{flex:1,fontWeight:600}}>{cat.nm}</span>{editPlan&&<input style={{...sI,width:55,height:22,fontSize:14}} defaultValue={pT2||""} onBlur={e=>{const v=parseFloat(e.target.value)||0;if(cat.subs.length===1)uSub(cat.subs[0].id,"plan",v);else if(cat.subs.length===0)return;else{const total=cat.subs.reduce((s,sub)=>s+sub.dp,0);cat.subs.forEach(sub=>{uSub(sub.id,"plan",total>0?Math.round(v*sub.dp/total):Math.round(v/cat.subs.length))})}}} placeholder="€"/>}<span style={{color:"#999",minWidth:45,textAlign:"right",fontSize:14}}>{fmt(pT2)}</span><span style={{minWidth:45,textAlign:"right",fontSize:14,fontWeight:600}}>{fmt(aT2)}</span><span style={{minWidth:32,textAlign:"right",fontWeight:600,fontSize:13,color:pT2?(p2>90?C.rd:p2>70?C.or:C.gn):C.mt}}>{pT2?p2+"%":"—"}</span></div>
+            {cat.subs.filter(sub=>subVis[sub.id]!==true).map(sub=>{const sd=md.subs?.[sub.id]||{plan:0,actual:0};const sp=pc(sd.actual,sd.plan);return<div key={sub.id} style={{display:"flex",alignItems:"center",gap:4,padding:"2px 0 2px 12px",borderBottom:`1px solid ${C.fn}`,fontSize:13,color:"#666"}}><span style={{flex:1}}>{sub.nm}</span>{editPlan?<input style={{...sI,width:50,height:20,fontSize:13}} defaultValue={sd.plan||""} onBlur={e=>uSub(sub.id,"plan",e.target.value)} placeholder="€"/>:<span style={{color:"#999",minWidth:40,textAlign:"right"}}>{sd.plan?fN(sd.plan):"—"}</span>}<span style={{minWidth:40,textAlign:"right",fontWeight:500}}>{sd.actual?fN(sd.actual):"—"}</span><span style={{minWidth:28,textAlign:"right",fontSize:12,color:sd.plan?(sp>90?C.rd:sp>70?C.or:C.gn):C.mt}}>{sd.plan?sp+"%":"—"}</span></div>})}
+          </React.Fragment>})}</div>
+        </div>
+      </div>
 
       {/* Charts */}
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginTop:4}}>
@@ -410,8 +508,10 @@ export default function App(){
       {isClosed&&<div style={{background:"#dcfce7",border:"1px solid #86efac",borderRadius:8,padding:"6px 12px",marginBottom:10,fontSize:17,color:"#166534"}}>Ta mesec je zaključen. Odpri ga z gumbom zgoraj za urejanje.</div>}
       <div style={{fontSize:16,fontWeight:600,color:C.sb,marginBottom:8}}>Prihodki</div>
       <div style={sC}>{["Kristina","Tadej"].map(person=><div key={person} style={{marginBottom:8}}><div style={{fontSize:18,fontWeight:600,color:C.bl,marginBottom:4}}>{person}</div><div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:6}}>{itList.map(t=><div key={`${person}-${t}`}><div style={{fontSize:18,color:"#999"}}>{t}</div><input style={{...sI,height:26,fontSize:17,width:"100%"}} defaultValue={md.income?.[person]?.[t]||""} onBlur={e=>uInc(person,t,e.target.value)} placeholder="0"/></div>)}</div></div>)}<div style={{borderTop:`1px solid ${C.bd}`,paddingTop:8}}><div style={{fontSize:17,fontWeight:600,color:C.sb,marginBottom:4}}>Dodatni prihodki</div>{(md.customIncome||[]).map((ci,i)=><div key={i} style={{fontSize:17,padding:"2px 0"}}>{ci.label} — {ci.person} — {fmt(ci.amount)}</div>)}<AddCI onAdd={addCI}/></div></div>
-      <CatEntry cats={visibleCats.filter(c=>c.tp==="fixed")} title="Fiksni stroški"/>
-      <CatEntry cats={visibleCats.filter(c=>c.tp==="var"&&c.id!=="unexpected")} title="Variabilni stroški"/>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,alignItems:"start"}}>
+        <CatEntry cats={visibleCats.filter(c=>c.tp==="fixed")} title="Fiksni stroški" md={md} subVis={subVis} expandBreakdown={expandBreakdown} txnInput={txnInput} toggleSubVis={toggleSubVis} setExpandBreakdown={setExpandBreakdown} setTxnInput={setTxnInput} addTransaction={addTransaction} removeTransaction={removeTransaction} updateTransactionComment={updateTransactionComment} uSub={uSub}/>
+        <CatEntry cats={visibleCats.filter(c=>c.tp==="var"&&c.id!=="unexpected")} title="Variabilni stroški" md={md} subVis={subVis} expandBreakdown={expandBreakdown} txnInput={txnInput} toggleSubVis={toggleSubVis} setExpandBreakdown={setExpandBreakdown} setTxnInput={setTxnInput} addTransaction={addTransaction} removeTransaction={removeTransaction} updateTransactionComment={updateTransactionComment} uSub={uSub}/>
+      </div>
       {AS.some(s=>subVis[s.id]===true)&&<div style={sC}><div style={{fontSize:18,fontWeight:600,color:C.tx,marginBottom:8}}>Skriti elementi 👁‍🗨</div>{AS.filter(s=>subVis[s.id]===true).map(sub=><div key={sub.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"6px 0",borderBottom:`1px solid ${C.fn}`,fontSize:17}}><span>{sub.nm}</span><button type="button" onClick={()=>toggleSubVis(sub.id)} style={{background:"none",border:"none",color:C.gn,cursor:"pointer",fontWeight:600}}>Pokaži</button></div>)}</div>}
       <div style={{fontSize:16,fontWeight:600,color:C.sb,marginBottom:8}}>Nepredvideni stroški</div>
       <div style={sC}><AddUX onAdd={addUX} kuList={kuList}/>{(md.unexpectedItems||[]).map((it,i)=><div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",fontSize:17,padding:"6px 0",borderBottom:`1px solid ${C.fn}`}}><span>{it.desc} — {fmt(it.amount)} ({it.person})</span><button type="button" onClick={()=>setData(prev=>{const n=JSON.parse(JSON.stringify(prev));if(!n[yr])n[yr]=initY();if(!n[yr][mo])n[yr][mo]=initM();n[yr][mo].unexpectedItems=n[yr][mo].unexpectedItems.filter((_,j)=>j!==i);return n})} style={{background:"none",border:"none",color:C.rd,cursor:"pointer",fontSize:16}}>✕</button></div>)}</div>
@@ -429,13 +529,13 @@ export default function App(){
       <div style={{display:"flex",gap:4,marginBottom:10}}>{MS.map((m,i)=>{const mdata=yd[i]||initM();return<button key={i} onClick={()=>setAnnualDetailMonth(annualDetailMonth===i?null:i)} type="button" style={{flex:1,textAlign:"center",fontSize:18,padding:"3px 0",borderRadius:4,background:annualDetailMonth===i?"#93c5fd":mdata.closed?"#dcfce7":"#f5f5f0",color:annualDetailMonth===i?C.bl:mdata.closed?"#166534":"#999",border:"none",cursor:"pointer",fontWeight:mdata.closed||annualDetailMonth===i?600:400}}>{m}</button>})}</div>
       {annualDetailMonth!==null&&<div style={{...sC,background:"#f0f7ff",border:`2px solid ${C.bl}`,marginBottom:8,padding:10}}>
         <div style={{fontSize:18,fontWeight:700,color:C.tx,marginBottom:6}}>Mesečni pregled: {MF[annualDetailMonth]} — {((md)=>{const fxA=fxT(md,'actual');const vrA=vrT(md,'actual');const uxA=uxtT(md);return `F: ${fN(fxA)} | V: ${fN(vrA)}${uxA>0?` | N: ${fN(uxA)}`:""}  =  ${fmt(fxA+vrA+uxA)}`})(yd[annualDetailMonth]||initM())}</div>
-        <div style={{display:"grid",gridTemplateColumns:"1fr 50px 50px 45px 38px",gap:5,fontSize:11,color:C.mt,fontWeight:600,padding:"0 0 3px",borderBottom:`1px solid ${C.bd}`}}>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 70px 70px 65px 50px",gap:5,fontSize:18,color:C.mt,fontWeight:600,padding:"0 0 3px",borderBottom:`1px solid ${C.bd}`}}>
           <span>Postavka</span><span>Plan</span><span>Izvedba</span><span>Razl.€</span><span>%</span>
         </div>
-        {visibleCats.map(cat=>{const pT=cT(yd[annualDetailMonth]||initM(),cat,'plan');const aT=cT(yd[annualDetailMonth]||initM(),cat,'actual');return<div key={cat.id}><div style={{fontSize:17,fontWeight:700,color:C.tx,padding:"3px 0 1px",marginTop:1}}>{cat.nm}</div>{cat.subs.filter(sub=>subVis[sub.id]!==true).map(sub=>{const d=yd[annualDetailMonth]?.subs?.[sub.id]||{plan:0,actual:0};const diff=d.plan-d.actual;const pct=d.plan?pc(d.actual,d.plan)+"%":"—";return<div key={sub.id} style={{display:"grid",gridTemplateColumns:"1fr 50px 50px 45px 38px",gap:5,fontSize:18,alignItems:"center",padding:"1px 0 1px 10px",borderBottom:`1px solid #f5f5f5`}}><span style={{fontSize:11}}>{sub.nm}</span><span style={{color:"#999",fontSize:11,textAlign:"right"}}>{d.plan?fN(d.plan):"—"}</span><span style={{fontWeight:600,fontSize:18,textAlign:"right"}}>{d.actual?fN(d.actual):"—"}</span><span style={{fontSize:11,color:d.plan?(diff>=0?C.gn:C.rd):C.mt,textAlign:"right"}}>{d.plan?(diff>=0?"+":"")+fN(diff):"—"}</span><span style={{fontSize:11,color:d.plan?(pc(d.actual,d.plan)>90?C.rd:C.gn):C.mt,textAlign:"right"}}>{pct}</span></div>})}<div style={{display:"grid",gridTemplateColumns:"1fr 50px 50px 45px 38px",gap:5,fontSize:11,alignItems:"center",padding:"1px 0 1px 10px",borderTop:`1px solid ${C.bd}`,fontWeight:700,color:C.sb,background:"#f9fafb"}}><span style={{fontSize:18}}>{cat.nm}</span><span style={{textAlign:"right"}}>{pT>0?fN(pT):"—"}</span><span style={{textAlign:"right"}}>{aT>0?fN(aT):"—"}</span><span style={{textAlign:"right"}}>{pT?(aT-pT>=0?"+":"")+fN(aT-pT):"—"}</span><span style={{textAlign:"right"}}>{pT?pc(aT,pT)+"%":"—"}</span></div></div>})}
+        {visibleCats.map(cat=>{const pT=cT(yd[annualDetailMonth]||initM(),cat,'plan');const aT=cT(yd[annualDetailMonth]||initM(),cat,'actual');return<div key={cat.id}><div style={{fontSize:17,fontWeight:700,color:C.tx,padding:"3px 0 1px",marginTop:1}}>{cat.nm}</div>{cat.subs.filter(sub=>subVis[sub.id]!==true).map(sub=>{const d=yd[annualDetailMonth]?.subs?.[sub.id]||{plan:0,actual:0};const diff=d.plan-d.actual;const pct=d.plan?pc(d.actual,d.plan)+"%":"—";return<div key={sub.id} style={{display:"grid",gridTemplateColumns:"1fr 70px 70px 65px 50px",gap:5,fontSize:16,alignItems:"center",padding:"1px 0 1px 10px",borderBottom:`1px solid #f5f5f5`}}><span style={{fontSize:18}}>{sub.nm}</span><span style={{color:"#999",fontSize:18,textAlign:"right"}}>{d.plan?fN(d.plan):"—"}</span><span style={{fontWeight:600,fontSize:16,textAlign:"right"}}>{d.actual?fN(d.actual):"—"}</span><span style={{fontSize:11,color:d.plan?(diff>=0?C.gn:C.rd):C.mt,textAlign:"right"}}>{d.plan?(diff>=0?"+":"")+fN(diff):"—"}</span><span style={{fontSize:11,color:d.plan?(pc(d.actual,d.plan)>90?C.rd:C.gn):C.mt,textAlign:"right"}}>{pct}</span></div>})}<div style={{display:"grid",gridTemplateColumns:"1fr 70px 70px 65px 50px",gap:5,fontSize:18,alignItems:"center",padding:"1px 0 1px 10px",borderTop:`1px solid ${C.bd}`,fontWeight:700,color:C.sb,background:"#f9fafb"}}><span style={{fontSize:18}}>{cat.nm}</span><span style={{textAlign:"right"}}>{pT>0?fN(pT):"—"}</span><span style={{textAlign:"right"}}>{aT>0?fN(aT):"—"}</span><span style={{textAlign:"right"}}>{pT?(aT-pT>=0?"+":"")+fN(aT-pT):"—"}</span><span style={{textAlign:"right"}}>{pT?pc(aT,pT)+"%":"—"}</span></div></div>})}
       </div>}
 
-      {[{tp:"fixed",nm:"Fiksni stroški"},{tp:"var",nm:"Variabilni stroški"}].map(type=><div key={type.tp}><div style={{fontSize:16,fontWeight:700,color:C.tx,marginBottom:3,marginTop:type.tp==="var"?4:0}}>{type.nm}</div><div style={{...sC,overflowX:"auto",padding:8}}><table style={{width:"100%",fontSize:14,borderCollapse:"collapse"}}><thead><tr style={{color:C.mt,borderBottom:`2px solid ${C.bd}`}}><th style={{textAlign:"left",padding:"6px 10px",minWidth:"180px",fontSize:14}}>Postavka</th>{MS.map(m=><th key={m} style={{textAlign:"right",padding:"6px 6px",cursor:"pointer",fontWeight:600,fontSize:14,minWidth:"60px"}} onClick={()=>{setMo(MS.indexOf(m));setVw("entry")}}>{m}</th>)}<th style={{textAlign:"right",padding:"2px 4px",fontWeight:700,fontSize:14}}>Σ</th></tr></thead><tbody>{visibleCats.filter(c=>c.tp===type.tp).map(cat=><React.Fragment key={cat.id}><tr style={{background:"#f9fafb",borderTop:`1px solid ${C.fn}`}}><td colSpan={14} style={{padding:"6px 8px",fontSize:14,fontWeight:700,color:C.tx}}>{cat.nm}</td></tr>{cat.subs.filter(sub=>subVis[sub.id]!==true).map(sub=>{let tot=0;return<tr key={sub.id}><td style={{padding:"4px 8px 4px 12px",fontSize:14,color:"#888"}}>{sub.nm.substring(0,18)}</td>{Array.from({length:12},(_,i)=>{const mdata=yd[i]||initM();const v=mdata.subs?.[sub.id]?.actual||0;tot+=v;return<td key={i} style={{textAlign:"right",padding:"4px 6px",color:v>0?"#333":"#ddd",fontSize:14,minWidth:"60px"}}>{v>0?fN(v):"—"}</td>})}<td style={{textAlign:"right",padding:"4px 8px",fontWeight:600,fontSize:14}}>{tot>0?fmt(tot):"—"}</td></tr>})}</React.Fragment>)}</tbody></table></div></div>)}
+      {[{tp:"fixed",nm:"Fiksni stroški"},{tp:"var",nm:"Variabilni stroški"}].map(type=><div key={type.tp}><div style={{fontSize:16,fontWeight:700,color:C.tx,marginBottom:3,marginTop:type.tp==="var"?4:0}}>{type.nm}</div><div style={{...sC,overflowX:"auto",padding:8}}><table style={{width:"100%",fontSize:14,borderCollapse:"collapse"}}><thead><tr style={{color:C.mt,borderBottom:`2px solid ${C.bd}`}}><th style={{textAlign:"left",padding:"6px 10px",minWidth:"180px",fontSize:14}}>Postavka</th>{MS.map(m=><th key={m} style={{textAlign:"right",padding:"6px 6px",cursor:"pointer",fontWeight:600,fontSize:14,minWidth:"60px"}} onClick={()=>{setMo(MS.indexOf(m));setVw("entry")}}>{m}</th>)}<th style={{textAlign:"right",padding:"2px 4px",fontWeight:700,fontSize:14}}>Σ</th></tr></thead><tbody>{visibleCats.filter(c=>c.tp===type.tp).map(cat=><React.Fragment key={cat.id}><tr style={{background:"#f9fafb",borderTop:`1px solid ${C.fn}`}}><td colSpan={14} style={{padding:"6px 8px",fontSize:14,fontWeight:700,color:C.tx}}>{cat.nm}</td></tr>{cat.subs.filter(sub=>subVis[sub.id]!==true).map(sub=>{let tot=0;return<tr key={sub.id}><td style={{padding:"4px 8px 4px 12px",fontSize:14,color:"#888",minWidth:"280px",whiteSpace:"normal"}}>{sub.nm}</td>{Array.from({length:12},(_,i)=>{const mdata=yd[i]||initM();const v=mdata.subs?.[sub.id]?.actual||0;tot+=v;return<td key={i} style={{textAlign:"right",padding:"4px 6px",color:v>0?"#333":"#ddd",fontSize:14,minWidth:"60px"}}>{v>0?fN(v):"—"}</td>})}<td style={{textAlign:"right",padding:"4px 8px",fontWeight:600,fontSize:14}}>{tot>0?fmt(tot):"—"}</td></tr>})}</React.Fragment>)}<tr style={{background:"#e8f5e9",borderTop:`2px solid ${C.bd}`,fontWeight:700,fontSize:15}}><td style={{padding:"6px 8px",color:C.gn}}>{type.nm.includes("Fiksni")?"Skupaj fiksni stroški":"Skupaj variabilni stroški"}</td>{Array.from({length:12},(_,i)=>{const mdata=yd[i]||initM();const tot=visibleCats.filter(c=>c.tp===type.tp).reduce((s,cat)=>s+cat.subs.filter(sub=>subVis[sub.id]!==true).reduce((ss,sub)=>ss+(mdata.subs?.[sub.id]?.actual||0),0),0);return<td key={i} style={{textAlign:"right",padding:"6px 6px",color:C.gn,minWidth:"60px"}}>{tot>0?fN(tot):"—"}</td>})}<td style={{textAlign:"right",padding:"6px 8px",color:C.gn}}>{(() => {let total=0; for(let i=0;i<12;i++){const mdata=yd[i]||initM(); const m=visibleCats.filter(c=>c.tp===type.tp).reduce((s,cat)=>s+cat.subs.filter(sub=>subVis[sub.id]!==true).reduce((ss,sub)=>ss+(mdata.subs?.[sub.id]?.actual||0),0),0); total+=m;} return total>0?fmt(total):"—"})()}</td></tr></tbody></table></div></div>)}
 
       <div style={{fontSize:16,fontWeight:700,color:C.tx,marginBottom:3,marginTop:4}}>Nepredvideni stroški</div>
       <div style={{...sC,overflowX:"auto",padding:8}}><table style={{width:"100%",fontSize:14,borderCollapse:"collapse"}}><thead><tr style={{color:C.mt,borderBottom:`2px solid ${C.bd}`}}><th style={{textAlign:"left",padding:"6px 10px",fontSize:14}}>Nepredvideni</th>{MS.map(m=><th key={m} style={{textAlign:"right",padding:"6px 6px",cursor:"pointer",fontWeight:600,fontSize:14,minWidth:"60px"}} onClick={()=>{setMo(MS.indexOf(m));setVw("entry")}}>{m}</th>)}<th style={{textAlign:"right",padding:"2px 4px",fontWeight:700,fontSize:14}}>Σ</th></tr></thead><tbody><tr style={{borderTop:`1px solid ${C.fn}`}}><td style={{padding:"6px 8px",fontWeight:600,fontSize:14}}>Stroški</td>{Array.from({length:12},(_,i)=>{const mdata=yd[i]||initM();const v=uxtT(mdata);return<td key={i} style={{textAlign:"right",padding:"4px 6px",color:v>0?"#333":"#ddd",fontSize:14,minWidth:"60px"}}>{v>0?fN(v):"—"}</td>})}<td style={{textAlign:"right",padding:"4px 8px",fontWeight:700,fontSize:14}}>{(() => {let t=0; for(let i=0;i<12;i++)t+=uxtT(yd[i]||initM()); return t>0?fmt(t):"—"})()}</td></tr></tbody></table></div>
@@ -511,7 +611,18 @@ export default function App(){
       <div style={sC}><div style={{fontSize:16,fontWeight:600,color:C.sb,marginBottom:8}}>Predpostavke</div><PSlider label="Rast plač (%/leto)" value={simG} onChange={setSimG} min={-15} max={15} unit="%"/><PSlider label="Inflacija (%/leto)" value={simI} onChange={setSimI} min={-10} max={10} unit="%"/><PSlider label="Rast str. vrtca (%)" value={simC} onChange={setSimC} min={-10} max={15} unit="%"/><PSlider label="Dod. naložbe/mesec" value={simE} onChange={setSimE} min={-500} max={500} step={10} unit="€"/></div>
       <div style={sC}><div style={{fontSize:16,fontWeight:600,color:C.sb,marginBottom:8}}>Scenariji</div><div style={{display:"flex",gap:6,flexWrap:"wrap"}}><button style={sB(false)} onClick={()=>setSimSc(s=>[...s,{type:"mortgage",year:2027,amount:800}])}>+ Hipoteka 2027</button><button style={sB(false)} onClick={()=>setSimSc(s=>[...s,{type:"raise",year:2027,pct:10}])}>+ Povišica 10%</button><button style={sB(false)} onClick={()=>setSimSc(s=>[...s,{type:"jobLoss",year:2028}])}>+ Izguba službe</button><button style={sB(false)} onClick={()=>setSimSc(s=>[...s,{type:"move",year:2027,amount:-200}])}>+ Cenejše stanovanje</button>{simSc.length>0&&<button style={{...sB(false),color:C.rd,borderColor:C.rd}} onClick={()=>setSimSc([])}>Počisti</button>}</div>{simSc.length>0&&<div style={{marginTop:6,fontSize:16,color:C.bl}}>Aktivni: {simSc.map(s=>s.type).join(", ")}</div>}</div>
       {simData.length>0&&<div style={{...sC,background:simData.some(d=>d.Razlika<0)?"#fef2f2":"#f0fdf4",border:`1px solid ${simData.some(d=>d.Razlika<0)?"#fecaca":"#bbf7d0"}`}}><div style={{fontSize:18,fontWeight:600,color:C.sb,marginBottom:6}}>Finančno zdravje</div><div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10}}>{simData.slice(-1).map((d,i)=><div key={i}><div style={{fontSize:16,color:C.mt}}>Letni tok gotovine</div><div style={{fontSize:18,fontWeight:700,color:d.Razlika>=0?C.gn:C.rd}}>{d.Razlika>=0?"+":""}{fmt(d.Razlika)}</div></div>)}<div><div style={{fontSize:16,color:C.mt}}>Status</div><div style={{fontSize:16,fontWeight:600,color:simData.some(d=>d.Razlika<-5000)?C.rd:simData.some(d=>d.Razlika<0)?"#f59e0b":C.gn}}>{simData.some(d=>d.Razlika<-5000)?"🔴 Precejšnji deficit":simData.some(d=>d.Razlika<0)?"🟡 Primanjkljaj":"🟢 Stabilno"}</div></div><div><div style={{fontSize:16,color:C.mt}}>Letnih mesecev v deficitu</div><div style={{fontSize:16,fontWeight:600}}>{simData.filter(d=>d.Razlika<0).length} od {simData.length}</div></div></div></div>}
-      <div style={sC}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}><span style={{fontSize:16,fontWeight:600,color:C.sb}}>Projekcija</span><div style={{display:"flex",gap:4}}>{["bar","line","area","cash"].map(v=><button key={v} style={{...sB(simViz===v),fontSize:16,height:24,padding:"0 8px"}} onClick={()=>setSimViz(v)}>{v==="bar"?"Stolpci":v==="line"?"Črtni":v==="area"?"Površinski":"Tok gotovine"}</button>)}</div></div>
+      <div style={sC}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}><span style={{fontSize:16,fontWeight:600,color:C.sb}}>Projekcija</span><div style={{display:"flex",gap:4}}>{["bar","line","area","cash"].map(v=><button key={v} style={{...sB(simViz===v),fontSize:16,height:24,padding:"0 8px"}} onClick={()=>setSimViz(v)}>{v==="bar"?"Stolpci":v==="line"?"Črtni":v==="area"?"Površinski":"Tok gotovine"}</button>)}</div></div>
+        <div style={{position:"relative",marginBottom:6}}>
+          <div style={{fontSize:14,color:C.mt,padding:"8px 10px",background:"#f9fafb",borderRadius:4,border:"1px solid #ddd"}}>
+            💡 Kako se izračunava:
+            <div style={{display:"flex",gap:2,flexWrap:"wrap",marginTop:6}}>
+              {[{name:"Prihodki",color:C.gn,desc:"Povprečni mesečni prihodek × rastni faktor × 12"},{name:"Odhodki",color:C.rd,desc:"Povprečni mesečni odhodki × inflacijski faktor × 12"},{name:"Prihranki",color:C.bl,desc:"Skupni prihranki: naraščajoči znesek "},{name:"Razlika",color:"#7c3aed",desc:"Letni tok gotovine: Prihodki - Odhodki"}].map(m=><div key={m.name} style={{position:"relative"}} onMouseEnter={()=>setHoveredMetric(m.name)} onMouseLeave={()=>setHoveredMetric(null)}>
+                <span style={{cursor:"help",color:m.color,fontWeight:600,padding:"2px 6px",borderRadius:3,background:"#fff",border:`1px solid ${m.color}30`,display:"inline-block"}}>{m.name}</span>
+                {hoveredMetric===m.name&&<div style={{position:"absolute",bottom:"100%",left:"50%",transform:"translateX(-50%)",background:"#1a1a2e",color:"#fff",padding:"8px 12px",borderRadius:6,fontSize:13,whiteSpace:"nowrap",zIndex:10,marginBottom:4,boxShadow:"0 4px 12px rgba(0,0,0,0.15)",border:"1px solid #333"}}>{m.desc}</div>}
+              </div>)}
+            </div>
+          </div>
+        </div>
         <ResponsiveContainer width="100%" height={220}>
           {simViz==="bar"?<BarChart data={simData} barGap={2}><XAxis dataKey="name" tick={{fontSize:16}} axisLine={false}/><YAxis tick={{fontSize:18}} axisLine={false} tickFormatter={v=>`€${Math.round(v/1000)}k`}/><Tooltip formatter={v=>fmt(v)} contentStyle={{fontSize:17}}/><Legend wrapperStyle={{fontSize:16}}/><Bar dataKey="Prihodki" fill={C.gn} radius={[3,3,0,0]} barSize={14}/><Bar dataKey="Odhodki" fill={C.rd} radius={[3,3,0,0]} barSize={14} opacity={0.6}/><Bar dataKey="Prihranki" fill={C.bl} radius={[3,3,0,0]} barSize={14} opacity={0.8}/></BarChart>
           :simViz==="line"?<LineChart data={simData}><XAxis dataKey="name" tick={{fontSize:16}} axisLine={false}/><YAxis tick={{fontSize:18}} axisLine={false} tickFormatter={v=>`€${Math.round(v/1000)}k`}/><Tooltip formatter={v=>fmt(v)} contentStyle={{fontSize:17}}/><Legend wrapperStyle={{fontSize:16}}/><Line type="monotone" dataKey="Prihodki" stroke={C.gn} strokeWidth={2} dot={{r:4}}/><Line type="monotone" dataKey="Odhodki" stroke={C.rd} strokeWidth={2} dot={{r:4}}/><Line type="monotone" dataKey="Prihranki" stroke={C.bl} strokeWidth={2} dot={{r:4}}/></LineChart>
@@ -529,22 +640,25 @@ export default function App(){
         <input type="number" style={{...sI,width:120,height:34,fontSize:18,fontWeight:700}} value={manualBudget} onChange={e=>setManualBudget(parseInt(e.target.value)||0)}/><span style={{fontSize:16,fontWeight:600}}>€</span>
         <button onClick={syncPctToPlan} style={{...sB(true),background:C.gn,fontSize:17}}>Sinhroniziraj → mesečni vnos</button>
       </div>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,alignItems:"start"}}>
+        {[{tp:"fixed",nm:"Fiksni stroški"},{tp:"var",nm:"Variabilni stroški"}].map(type=><div key={type.tp} style={sC}>
+          <div style={{fontSize:16,fontWeight:700,color:C.tx,marginBottom:6}}>{type.nm}</div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 45px 55px 25px 55px 25px 70px",gap:5,fontSize:13,color:C.mt,fontWeight:600,padding:"0 0 4px",borderBottom:"1px solid #eee",alignItems:"center"}}>
+            <span>Postavka</span><span>Način</span><span>%</span><span></span><span>€</span><span></span><span style={{textAlign:"right"}}>Cilj</span>
+          </div>
+          {CATS.filter(c=>c.tp===type.tp).map(cat=><div key={cat.id}><div style={{fontSize:15,fontWeight:600,color:C.tx,padding:"4px 0 2px",marginTop:3}}>{cat.nm}</div>{cat.subs.filter(sub=>subVis[sub.id]!==true).map(sub=>{const mode=pMd[sub.id]||"fixed";const pV=bPct[sub.id]||0;const fV=pFx[sub.id]||0;const base=manualBudget;const target=mode==="pct"?Math.round(base*pV/100):fV;const pctOfBudget=base>0?pc(target,base):0;const euroFromPct=Math.round(base*pV/100);
+          return<div key={sub.id} style={{display:"grid",gridTemplateColumns:"1fr 45px 55px 25px 55px 25px 70px",gap:5,padding:"4px 0",borderBottom:`1px solid ${C.fn}`,fontSize:13,alignItems:"center",paddingLeft:10}}>
+            <span style={{fontSize:13,color:"#666"}}>{sub.nm}</span>
+            <select style={{...sS,width:42,height:24,fontSize:13}} value={mode} onChange={e=>setPMd(p=>({...p,[sub.id]:e.target.value}))}><option value="pct">%</option><option value="fixed">€</option></select>
+            <input type="number" min={0} max={100} value={mode==="pct"?pV:pctOfBudget} onChange={e=>{if(mode==="pct")setBPct(p=>({...p,[sub.id]:parseInt(e.target.value)||0}));else{const newPct=parseInt(e.target.value)||0;setPFx(p=>({...p,[sub.id]:Math.round(base*newPct/100)}))}}} style={{...sI,width:50,height:24,fontSize:14,textAlign:"right",fontWeight:600}}/>
+            <span style={{fontSize:13,color:C.mt}}>%</span>
+            <input type="number" value={mode==="pct"?euroFromPct:fV} onChange={e=>{if(mode==="fixed")setPFx(p=>({...p,[sub.id]:parseInt(e.target.value)||0}));else{const euro=parseInt(e.target.value)||0;setBPct(p=>({...p,[sub.id]:base>0?Math.round(euro/base*100):0}))}}} style={{...sI,width:50,height:24,fontSize:14,textAlign:"right",fontWeight:600}}/>
+            <span style={{fontSize:13,color:C.mt}}>€</span>
+            <span style={{textAlign:"right",fontWeight:600,fontSize:14,color:C.tx}}>{fmt(target)}</span>
+          </div>})}</div>)}
+        </div>)}
+      </div>
       <div style={sC}>
-        <div style={{display:"grid",gridTemplateColumns:"1fr 50px 100px 60px 30px 60px 30px 80px",gap:8,fontSize:16,color:C.mt,fontWeight:600,padding:"0 0 6px",borderBottom:"1px solid #eee",alignItems:"center"}}>
-          <span>Postavka</span><span>Način</span><span>Nastavi</span><span>%</span><span></span><span>€</span><span></span><span style={{textAlign:"right"}}>Cilj</span>
-        </div>
-        {[{tp:"fixed",nm:"Fiksni stroški"},{tp:"var",nm:"Variabilni stroški"}].map(type=><div key={type.tp}><div style={{fontSize:16,fontWeight:700,color:C.tx,padding:"8px 0 4px",marginTop:6}}>{type.nm}</div>{CATS.filter(c=>c.tp===type.tp).map(cat=><div key={cat.id}><div style={{fontSize:18,fontWeight:600,color:C.tx,padding:"4px 0 2px",marginTop:4}}>{cat.nm}</div>{cat.subs.filter(sub=>subVis[sub.id]!==true).map(sub=>{const mode=pMd[sub.id]||"fixed";const pV=bPct[sub.id]||0;const fV=pFx[sub.id]||0;const base=manualBudget;const target=mode==="pct"?Math.round(base*pV/100):fV;const pctOfBudget=base>0?pc(target,base):0;const euroFromPct=Math.round(base*pV/100);
-        return<div key={sub.id} style={{display:"grid",gridTemplateColumns:"1fr 50px 100px 60px 30px 60px 30px 80px",gap:8,padding:"6px 0",borderBottom:`1px solid ${C.fn}`,fontSize:17,alignItems:"center",paddingLeft:16}}>
-          <span style={{fontSize:16,color:"#666"}}>{sub.nm}</span>
-          <select style={{...sS,width:46,height:28,fontSize:16}} value={mode} onChange={e=>setPMd(p=>({...p,[sub.id]:e.target.value}))}><option value="pct">%</option><option value="fixed">€</option></select>
-          {mode==="pct"?<input type="range" min={0} max={50} value={pV} onChange={e=>setBPct(p=>({...p,[sub.id]:parseInt(e.target.value)}))} style={{flex:1}}/>
-          :<div style={{flex:1,height:4,borderRadius:2,background:"#eee",overflow:"hidden"}}><div style={{height:"100%",width:`${Math.min(pctOfBudget,100)}%`,borderRadius:2,background:C.bl}}/></div>}
-          <input type="number" min={0} max={100} value={mode==="pct"?pV:pctOfBudget} onChange={e=>{if(mode==="pct")setBPct(p=>({...p,[sub.id]:parseInt(e.target.value)||0}));else{const newPct=parseInt(e.target.value)||0;setPFx(p=>({...p,[sub.id]:Math.round(base*newPct/100)}))}}} style={{...sI,width:65,height:28,fontSize:18,textAlign:"right",fontWeight:600}}/>
-          <span style={{fontSize:17,color:C.mt}}>%</span>
-          <input type="number" value={mode==="pct"?euroFromPct:fV} onChange={e=>{if(mode==="fixed")setPFx(p=>({...p,[sub.id]:parseInt(e.target.value)||0}));else{const euro=parseInt(e.target.value)||0;setBPct(p=>({...p,[sub.id]:base>0?Math.round(euro/base*100):0}))}}} style={{...sI,width:65,height:28,fontSize:18,textAlign:"right",fontWeight:600}}/>
-          <span style={{fontSize:17,color:C.mt}}>€</span>
-          <span style={{textAlign:"right",fontWeight:600,fontSize:18,color:C.tx}}>{fmt(target)}</span>
-        </div>})}</div>)}</div>)}
         <div style={{fontSize:16,fontWeight:700,color:C.tx,padding:"8px 0 4px",marginTop:8}}>Nepredvideni stroški</div>
         <div style={{fontSize:18,fontWeight:600,color:C.tx,padding:"4px 0 2px",marginTop:4}}>Mesečne nepredvidene postavke</div>
         <AddUX onAdd={(d,a,p)=>{setData(prev=>{const n=JSON.parse(JSON.stringify(prev));if(!n[yr])n[yr]=initY();if(!n[yr][mo])n[yr][mo]=initM();n[yr][mo].unexpectedItems.push({desc:d,amount:parseFloat(a)||0,person:p});return n})}} kuList={kuList}/>
@@ -553,6 +667,48 @@ export default function App(){
           <span style={{fontSize:18,fontWeight:700}}>Skupaj: {fmt(AS.reduce((s,sub)=>{const m=pMd[sub.id]||"pct";return s+(m==="pct"?Math.round(manualBudget*(bPct[sub.id]||0)/100):(pFx[sub.id]||0))},0)+(md.unexpectedItems||[]).reduce((s,it)=>s+it.amount,0))}</span>
           <span style={{fontSize:16,color:C.mt}}>od {fmt(manualBudget)}</span>
         </div>
+      </div>
+    </div>}
+
+    {/* ===== ŽELJNI SEZNAM (Wishlist) ===== */}
+    {vw==="wishes"&&<div>
+      <h2 style={{fontSize:24,fontWeight:700,margin:"0 0 12px"}}>Željni seznam</h2>
+      <div style={sC}>
+        <div style={{fontSize:16,fontWeight:600,color:C.sb,marginBottom:8}}>Dodaj novo željo</div>
+        <div style={{display:"grid",gridTemplateColumns:"auto 1fr 1fr 1fr 1fr auto",gap:6,marginBottom:8,alignItems:"flex-end"}}>
+          <div><label style={{fontSize:14,color:C.mt,display:"block",marginBottom:2}}>Za:</label><select style={{...sS,height:34,width:"100%"}} value={wishForm.member} onChange={e=>setWishForm(p=>({...p,member:e.target.value}))}>{WISH_MEMBERS.map(m=><option key={m} value={m}>{m}</option>)}</select></div>
+          <div><label style={{fontSize:14,color:C.mt,display:"block",marginBottom:2}}>Želja</label><input style={{...sI,width:"100%",height:34}} value={wishForm.wish} onChange={e=>setWishForm(p=>({...p,wish:e.target.value}))} placeholder="npr. PlayStation 5"/></div>
+          <div><label style={{fontSize:14,color:C.mt,display:"block",marginBottom:2}}>Opis</label><input style={{...sI,width:"100%",height:34}} value={wishForm.desc} onChange={e=>setWishForm(p=>({...p,desc:e.target.value}))} placeholder="npr. Za igranje iger"/></div>
+          <div><label style={{fontSize:14,color:C.mt,display:"block",marginBottom:2}}>Povezava</label><input style={{...sI,width:"100%",height:34}} value={wishForm.link} onChange={e=>setWishForm(p=>({...p,link:e.target.value}))} placeholder="npr. amazon.com/..."/></div>
+          <div><label style={{fontSize:14,color:C.mt,display:"block",marginBottom:2}}>Komentar</label><input style={{...sI,width:"100%",height:34}} value={wishForm.comment} onChange={e=>setWishForm(p=>({...p,comment:e.target.value}))} placeholder="neobvezno"/></div>
+          <button style={{...sB(true),height:34,padding:"0 12px"}} onClick={()=>{if(wishForm.wish.trim()){setWishes(prev=>[...prev,{id:Date.now(),member:wishForm.member,wish:wishForm.wish,desc:wishForm.desc,link:wishForm.link,comment:wishForm.comment,received:false,giftedBy:"",occasion:""}]);setWishForm({member:wishForm.member,wish:"",desc:"",link:"",comment:""})}}}>Dodaj</button>
+        </div>
+      </div>
+
+      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(300px,1fr))",gap:12,marginTop:12}}>
+        {WISH_MEMBERS.map(member=>{const memberWishes=wishes.filter(w=>w.member===member);const openWishes=memberWishes.filter(w=>!w.received);const receivedWishes=memberWishes.filter(w=>w.received);return<div key={member}><div style={{fontSize:18,fontWeight:700,color:C.tx,marginBottom:8,padding:"8px 0",borderBottom:`2px solid ${C.bd}`}}>{member}</div>
+          {openWishes.length>0&&<div style={{marginBottom:12}}><div style={{fontSize:15,fontWeight:600,color:C.mt,marginBottom:6}}>Odprte želje ({openWishes.length})</div>{openWishes.map((w,i)=><div key={i} style={{...sC,marginBottom:4,background:"#f9fafb",padding:"10px 12px"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"start",marginBottom:6}}>
+              <div><div style={{fontSize:16,fontWeight:600,color:C.tx}}>{w.wish}</div>{w.desc&&<div style={{fontSize:13,color:C.mt,marginTop:2}}>{w.desc}</div>}</div>
+              <button type="button" onClick={()=>setWishes(prev=>prev.filter((_,j)=>j!==i))} style={{background:"none",border:"none",color:C.rd,cursor:"pointer",fontSize:16}}>✕</button>
+            </div>
+            {w.link&&<div style={{fontSize:12,marginBottom:4}}><a href={w.link} target="_blank" rel="noopener noreferrer" style={{color:C.bl,textDecoration:"none"}}>Povezava →</a></div>}
+            {w.comment&&<div style={{fontSize:12,color:"#666",fontStyle:"italic",marginBottom:4}}>"{w.comment}"</div>}
+            <button style={{...sB(true),background:C.gn,fontSize:13,padding:"4px 10px",height:"auto"}} onClick={()=>setWishes(prev=>prev.map((x,j)=>j===i?{...x,received:true,giftedBy:"",occasion:""}:x))}>Prejeto</button>
+          </div>)}</div>}
+          {receivedWishes.length>0&&<div><div style={{fontSize:15,fontWeight:600,color:C.gn,marginBottom:6}}>Prejeta darila ({receivedWishes.length})</div>{receivedWishes.map((w,i)=>{const idx=memberWishes.indexOf(w);return<div key={i} style={{...sC,marginBottom:4,background:"#f0fdf4",padding:"10px 12px"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"start",marginBottom:6}}>
+              <div><div style={{fontSize:16,fontWeight:600,color:C.tx}}>{w.wish}</div></div>
+              <button type="button" onClick={()=>setWishes(prev=>prev.filter((_,j)=>j!==idx))} style={{background:"none",border:"none",color:C.rd,cursor:"pointer",fontSize:16}}>✕</button>
+            </div>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6,marginBottom:6}}>
+              <div><label style={{fontSize:12,color:C.mt,display:"block",marginBottom:2}}>Podarila:</label><input style={{...sI,width:"100%",height:28,fontSize:13}} value={w.giftedBy} onChange={e=>setWishes(prev=>prev.map((x,j)=>j===idx?{...x,giftedBy:e.target.value}:x))} placeholder="Ime osebe"/></div>
+              <div><label style={{fontSize:12,color:C.mt,display:"block",marginBottom:2}}>Priložnost:</label><select style={{...sS,width:"100%",height:28,fontSize:13}} value={w.occasion} onChange={e=>setWishes(prev=>prev.map((x,j)=>j===idx?{...x,occasion:e.target.value}:x))}><option value="">Izberi...</option>{occasions.map(occ=><option key={occ} value={occ}>{occ}</option>)}</select></div>
+            </div>
+            <button style={{...sB(false),fontSize:13,padding:"4px 10px",height:"auto"}} onClick={()=>setWishes(prev=>prev.map((x,j)=>j===idx?{...x,received:false}:x))}>Označi kot odprto</button>
+          </div>})}</div>}
+          {memberWishes.length===0&&<div style={{fontSize:14,color:C.mt,textAlign:"center",padding:"12px",background:"#f5f5f0",borderRadius:4,fontStyle:"italic"}}>Ni želj za {member}</div>}
+        </div>})}
       </div>
     </div>}
 
@@ -592,6 +748,7 @@ export default function App(){
       {isSA&&<div style={sC}><div style={{fontSize:16,fontWeight:600,marginBottom:6}}>Vidnost kategorij za admin uporabnike</div><div style={{fontSize:17,color:C.mt,marginBottom:8}}>Izberi katere kategorije bodo vidne admin uporabnikom (ne-superadmin). Superadmin vidi vedno vse.</div><div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:4}}>{CATS.map(cat=><label key={cat.id} style={{display:"flex",alignItems:"center",gap:6,fontSize:17,padding:"3px 0",cursor:"pointer"}}><input type="checkbox" checked={adminViews.includes(cat.id)} onChange={e=>{if(e.target.checked)setAdminViews(v=>[...v,cat.id]);else setAdminViews(v=>v.filter(x=>x!==cat.id))}}/>{cat.nm}</label>)}</div><div style={{display:"flex",gap:6,marginTop:8}}><button style={{...sB(false),fontSize:16,height:24}} onClick={()=>setAdminViews(CATS.map(c=>c.id))}>Izberi vse</button><button style={{...sB(false),fontSize:16,height:24}} onClick={()=>setAdminViews([])}>Počisti</button></div></div>}
       <div style={sC}><div style={{fontSize:16,fontWeight:600,marginBottom:6}}>Vrste prihodkov (Dropdown)</div><div style={{fontSize:17,color:C.mt,marginBottom:8}}>Dodaj ali odstrani vrste prihodkov</div><div style={{marginBottom:8}}>{itList.map((item,i)=><div key={i} style={{display:"flex",gap:6,alignItems:"center",padding:"4px 0",fontSize:17}}><input style={{...sI,flex:1,height:26}} value={item} onChange={e=>{const n=[...itList];n[i]=e.target.value;setItList(n)}}/><button type="button" onClick={()=>setItList(itList.filter((_,j)=>j!==i))} style={{background:"none",border:"none",color:C.rd,cursor:"pointer",fontSize:16}}>✕</button></div>)}<button type="button" style={{...sB(false),fontSize:16,marginTop:4}} onClick={()=>setItList([...itList,'Nova vrsta'])}>+ Dodaj</button></div></div>
       <div style={sC}><div style={{fontSize:16,fontWeight:600,marginBottom:6}}>Nepredvideni stroški - Trgovine/Viri (Dropdown)</div><div style={{fontSize:17,color:C.mt,marginBottom:8}}>Dodaj ali odstrani trgovine in vire za nepredvidene stroške</div><div style={{marginBottom:8,maxHeight:200,overflowY:"auto"}}>{kuList.map((item,i)=><div key={i} style={{display:"flex",gap:6,alignItems:"center",padding:"4px 0",fontSize:17}}><input style={{...sI,flex:1,height:26}} value={item} onChange={e=>{const n=[...kuList];n[i]=e.target.value;setKuList(n)}}/><button type="button" onClick={()=>setKuList(kuList.filter((_,j)=>j!==i))} style={{background:"none",border:"none",color:C.rd,cursor:"pointer",fontSize:16}}>✕</button></div>)}<button type="button" style={{...sB(false),fontSize:16,marginTop:4}} onClick={()=>setKuList([...kuList,'Nova trgovina'])}>+ Dodaj</button></div></div>
+      <div style={sC}><div style={{fontSize:16,fontWeight:600,marginBottom:6}}>Priložnosti za Željni seznam</div><div style={{fontSize:17,color:C.mt,marginBottom:8}}>Dodaj ali odstrani priložnosti (npr. rojstni dnevi, prazniki)</div><div style={{marginBottom:8}}>{occasions.map((occ,i)=><div key={i} style={{display:"flex",gap:6,alignItems:"center",padding:"4px 0",fontSize:17}}><input style={{...sI,flex:1,height:26}} value={occ} onChange={e=>{const n=[...occasions];n[i]=e.target.value;setOccasions(n)}}/><button type="button" onClick={()=>setOccasions(occasions.filter((_,j)=>j!==i))} style={{background:"none",border:"none",color:C.rd,cursor:"pointer",fontSize:16}}>✕</button></div>)}<button type="button" style={{...sB(false),fontSize:16,marginTop:4}} onClick={()=>setOccasions([...occasions,'Nova priložnost'])}>+ Dodaj</button></div></div>
       <div style={sC}><div style={{fontSize:16,fontWeight:600,marginBottom:6}}>Podatki in varnostne kopije</div>
         <div style={{fontSize:17,color:C.mt,marginBottom:8}}>Priporočamo varnostno kopijo vsaj vsaka 2 tedna. Zadnja kopija: {localStorage.getItem('dp_lastbackup')?new Date(parseInt(localStorage.getItem('dp_lastbackup'))).toLocaleDateString("sl-SI"):"nikoli"}</div>
         <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:8}}>
