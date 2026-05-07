@@ -36,6 +36,17 @@ const IT=["Plača","Nagrada","Regres","Božičnica","Otroški dodatek","Porodni�
 const KU=["Amazon","HM","About You","Sports Direct","Mohito","Notino","Stradivarius","Grand Hotel Bernardin","Best Secret","Equa","Lelosi","DDStepOnline","Fever vstopnice"];
 const AS=CATS.flatMap(c=>c.subs);
 
+// ===== BUDGET PROFILE TEMPLATES =====
+const PROF_TEMPLATES=[
+  {id:"tpl_standard",name:"Standard (3.600 €)",budget:3600,nepMd:"pct",nepPct:5,nepFx:180,pMd:{},bPct:{},
+   pFx:{rent:700,utilities:200,admin:30,internet:60,propIns:20,carLoan:0,carIns:70,kinder:0,consL:0,vacSav:100,etf:150,tradeRep:150,groc:500,eatOut:100,snacks:30,fuel:100,parking:15,carMnt:20,taxi:0,clothes:50,shoes:30,hair:40,depil:20,drug:40,hobbies:30,trips:40,cinema:20,social:40,pharm:20,massage:0,suppl:20,dental:0,books:10,courses:0,stream:20,members:60,sw:20,bday:30,donate:0,repairs:30,equip:30,travel:80,kidStuff:0,kidOth:0}},
+  {id:"tpl_skromen",name:"Skromen (3.000 €)",budget:3000,nepMd:"pct",nepPct:5,nepFx:150,pMd:{},bPct:{},
+   pFx:{rent:600,utilities:150,admin:20,internet:50,propIns:0,carLoan:0,carIns:50,kinder:0,consL:0,vacSav:50,etf:100,tradeRep:100,groc:400,eatOut:60,snacks:20,fuel:70,parking:10,carMnt:10,taxi:0,clothes:30,shoes:20,hair:30,depil:10,drug:30,hobbies:20,trips:20,cinema:10,social:20,pharm:15,massage:0,suppl:10,dental:0,books:5,courses:0,stream:15,members:30,sw:15,bday:20,donate:0,repairs:20,equip:10,travel:50,kidStuff:0,kidOth:0}},
+  {id:"tpl_udoben",name:"Udoben (4.500 €)",budget:4500,nepMd:"pct",nepPct:5,nepFx:225,pMd:{},bPct:{},
+   pFx:{rent:900,utilities:250,admin:40,internet:70,propIns:30,carLoan:0,carIns:100,kinder:300,consL:0,vacSav:100,etf:200,tradeRep:200,groc:550,eatOut:150,snacks:40,fuel:120,parking:20,carMnt:30,taxi:10,clothes:80,shoes:50,hair:60,depil:30,drug:50,hobbies:50,trips:80,cinema:40,social:60,pharm:30,massage:40,suppl:30,dental:40,books:20,courses:50,stream:25,members:90,sw:25,bday:60,donate:20,repairs:50,equip:50,travel:150,kidStuff:60,kidOth:30}},
+];
+function initProfiles(){const saved=ld('dp_profiles',null);if(saved&&saved.length>0)return saved;const myPlan={id:'moj_plan',name:'Moj plan',isDefault:true,budget:ld('dp_mb',3600),bPct:ld('dp_pct',{}),pMd:ld('dp_pm',{}),pFx:ld('dp_pf',{}),nepPct:ld('dp_neppct',5),nepMd:ld('dp_nepmd','pct'),nepFx:ld('dp_nepfx',150)};return[myPlan,...PROF_TEMPLATES];}
+
 // ===== HELPERS =====
 function fmt(n){return new Intl.NumberFormat("sl-SI",{style:"currency",currency:"EUR",minimumFractionDigits:0,maximumFractionDigits:0}).format(n||0)}
 function fN(n){return new Intl.NumberFormat("sl-SI",{minimumFractionDigits:0,maximumFractionDigits:0}).format(n||0)}
@@ -86,7 +97,7 @@ const aCd={background:'#fff',borderRadius:16,padding:'2.5rem',width:380,boxShado
 function PSlider({label,value,onChange,min,max,step=1,unit=""}){return<div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}><span style={{fontSize:17,color:C.mt,minWidth:140}}>{label}</span><input type="range" min={min} max={max} step={step} value={value} onChange={e=>onChange(Number(e.target.value))} style={{flex:1}}/><input type="number" min={min} max={max} step={step} value={value} onChange={e=>onChange(Number(e.target.value)||0)} style={{...sI,width:60,height:26,fontSize:17,textAlign:"right"}}/>{unit&&<span style={{fontSize:16,color:C.mt,minWidth:12}}>{unit}</span>}</div>}
 function AddCI({onAdd}){const[l,sL]=useState('');const[a,sA]=useState('');const[p,sP]=useState('Kristina');const[c,sCC]=useState('');return<div style={{display:"flex",gap:4,marginTop:6,alignItems:"center",flexWrap:"wrap"}}><input style={{...sI,flex:1,minWidth:80,height:26,fontSize:17}} value={l} onChange={e=>sL(e.target.value)} placeholder="Opis"/><input style={{...sI,width:55,height:26,fontSize:17}} type="number" value={a} onChange={e=>sA(e.target.value)} placeholder="€"/><select style={{...sS,width:75,height:26,fontSize:17}} value={p} onChange={e=>sP(e.target.value)}><option>Kristina</option><option>Tadej</option></select><input style={{...sI,flex:0.5,minWidth:50,height:26,fontSize:16}} value={c} onChange={e=>sCC(e.target.value)} placeholder="komentar"/><button style={{...sB(true),height:26,padding:"0 8px"}} onClick={()=>{if(l){onAdd(l,a,p,c);sL('');sA('');sCC('')}}}>+</button></div>}
 function AddUX({onAdd,kuList}){const[d,sD]=useState('');const[cu,sCu]=useState('');const[a,sA]=useState('');const[p,sP]=useState('Kristina');return<div style={{display:"flex",gap:6,alignItems:"center",marginBottom:8,flexWrap:"wrap"}}><select style={{...sS,flex:1,minWidth:100}} value={d} onChange={e=>sD(e.target.value)}><option value="">Izberi...</option>{kuList.map(k=><option key={k} value={k}>{k}</option>)}<option value="__c">+ Drugo</option></select>{(d===""||d==="__c")&&<input style={{...sI,width:80}} value={cu} onChange={e=>sCu(e.target.value)} placeholder="Opis"/>}<input style={{...sI,width:60}} type="number" value={a} onChange={e=>sA(e.target.value)} placeholder="€"/><select style={{...sS,width:75}} value={p} onChange={e=>sP(e.target.value)}><option>Kristina</option><option>Tadej</option></select><button style={{...sB(true),padding:"0 10px"}} onClick={()=>{const desc=d==="__c"||!d?cu:d;if(desc){onAdd(desc,a,p);sD('');sCu('');sA('')}}}>+</button></div>}
-function AddGoal({onAdd,onCancel}){const[n,sN]=useState('');const[t,sT2]=useState('saving');const[tg,sTg]=useState('');const[src,sSrc]=useState('');const[note,sNote]=useState('');const[mo,sMo]=useState('');const[scope,setScope]=useState('general');const[autoPull,setAutoPull]=useState(false);const[pullMo,setPullMo]=useState('all');return<div style={{...sC,border:"1px dashed #93c5fd",background:"#f0f7ff"}}><div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:8}}><div><div style={{fontSize:16,color:C.mt,marginBottom:2}}>Ime cilja</div><input style={{...sI,width:"100%"}} value={n} onChange={e=>sN(e.target.value)} placeholder="npr. Nujni sklad"/></div><div><div style={{fontSize:16,color:C.mt,marginBottom:2}}>Tip</div><select style={{...sS,width:"100%"}} value={t} onChange={e=>sT2(e.target.value)}><option value="saving">Varčevalni</option><option value="limit">Mesečni limit</option><option value="manual">Ročni vnos</option></select></div><div><div style={{fontSize:16,color:C.mt,marginBottom:2}}>Obseg</div><select style={{...sS,width:"100%"}} value={scope} onChange={e=>setScope(e.target.value)}><option value="general">Splošni cilj</option><option value="monthly">Mesečni cilj</option></select></div><div><div style={{fontSize:16,color:C.mt,marginBottom:2}}>{scope==="monthly"?"Mesec":"Ciljni znesek (€)"}</div>{scope==="monthly"?<select style={{...sS,width:"100%"}} value={mo} onChange={e=>sMo(e.target.value)}><option value="">Izberi mesec</option>{MF.map((m,i)=><option key={i} value={i}>{m}</option>)}</select>:<input style={{...sI,width:"100%"}} type="number" value={tg} onChange={e=>sTg(e.target.value)} placeholder="0"/>}</div>{scope==="monthly"&&<div><div style={{fontSize:16,color:C.mt,marginBottom:2}}>Ciljni znesek (€)</div><input style={{...sI,width:"100%"}} type="number" value={tg} onChange={e=>sTg(e.target.value)} placeholder="0"/></div>}<div><div style={{fontSize:16,color:C.mt,marginBottom:2}}>Vir podatkov</div><select style={{...sS,width:"100%"}} value={src} onChange={e=>sSrc(e.target.value)}><option value="">Ročno</option>{AS.map(s=><option key={s.id} value={s.id}>{s.nm.substring(0,28)}</option>)}</select></div></div><div style={{marginBottom:8}}><label style={{display:"flex",alignItems:"center",gap:6,cursor:"pointer",fontSize:17}}><input type="checkbox" checked={autoPull && src} onChange={e=>setAutoPull(e.target.checked)} disabled={!src}/><span style={{color:src?C.tx:C.mt}}>Avtomatsko prevzeni (samo s črtom podatkov)</span></label></div>{autoPull&&src&&<div><div style={{fontSize:16,color:C.mt,marginBottom:2}}>Od katerega meseca?</div><select style={{...sS,width:"100%"}} value={pullMo} onChange={e=>setPullMo(e.target.value)}><option value="all">Vsi zaprti meseci (skupaj)</option><option value="current">Trenutni mesec</option>{MF.map((m,i)=><option key={i} value={String(i)}>{m}</option>)}</select></div>}<div style={{marginBottom:8}}><div style={{fontSize:16,color:C.mt,marginBottom:2}}>Opomba</div><input style={{...sI,width:"100%"}} value={note} onChange={e=>sNote(e.target.value)} placeholder="neobvezno"/></div><div style={{display:"flex",gap:6,justifyContent:"flex-end"}}><button style={sB(false)} onClick={onCancel}>Prekliči</button><button style={sB(true)} onClick={()=>{if(n&&tg)onAdd({name:n,type:t,target:parseFloat(tg),current:0,source:src,note,scope,month:scope==="monthly"?parseInt(mo):null,autoPull:autoPull&&src,pullFromMonth:pullMo})}}>Shrani</button></div></div>}
+function AddGoal({onAdd,onCancel}){const[n,sN]=useState('');const[t,sT2]=useState('saving');const[tg,sTg]=useState('');const[src,sSrc]=useState('');const[note,sNote]=useState('');const[mo,sMo]=useState('');const[scope,setScope]=useState('general');const[autoPull,setAutoPull]=useState(false);const[pullMo,setPullMo]=useState('all');const[targetDate,setTargetDate]=useState('');return<div style={{...sC,border:"1px dashed #93c5fd",background:"#f0f7ff"}}><div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:8}}><div><div style={{fontSize:16,color:C.mt,marginBottom:2}}>Ime cilja</div><input style={{...sI,width:"100%"}} value={n} onChange={e=>sN(e.target.value)} placeholder="npr. Nujni sklad"/></div><div><div style={{fontSize:16,color:C.mt,marginBottom:2}}>Tip</div><select style={{...sS,width:"100%"}} value={t} onChange={e=>sT2(e.target.value)}><option value="saving">Varčevalni</option><option value="limit">Mesečni limit</option><option value="manual">Ročni vnos</option></select></div><div><div style={{fontSize:16,color:C.mt,marginBottom:2}}>Obseg</div><select style={{...sS,width:"100%"}} value={scope} onChange={e=>setScope(e.target.value)}><option value="general">Splošni cilj</option><option value="monthly">Mesečni cilj</option></select></div><div><div style={{fontSize:16,color:C.mt,marginBottom:2}}>{scope==="monthly"?"Mesec":"Ciljni znesek (€)"}</div>{scope==="monthly"?<select style={{...sS,width:"100%"}} value={mo} onChange={e=>sMo(e.target.value)}><option value="">Izberi mesec</option>{MF.map((m,i)=><option key={i} value={i}>{m}</option>)}</select>:<input style={{...sI,width:"100%"}} type="number" value={tg} onChange={e=>sTg(e.target.value)} placeholder="0"/>}</div>{scope==="monthly"&&<div><div style={{fontSize:16,color:C.mt,marginBottom:2}}>Ciljni znesek (€)</div><input style={{...sI,width:"100%"}} type="number" value={tg} onChange={e=>sTg(e.target.value)} placeholder="0"/></div>}<div><div style={{fontSize:16,color:C.mt,marginBottom:2}}>Ciljni datum (neobvezno)</div><input style={{...sI,width:"100%"}} type="month" value={targetDate} onChange={e=>setTargetDate(e.target.value)} placeholder="YYYY-MM"/></div><div><div style={{fontSize:16,color:C.mt,marginBottom:2}}>Vir podatkov</div><select style={{...sS,width:"100%"}} value={src} onChange={e=>sSrc(e.target.value)}><option value="">Ročno</option>{AS.map(s=><option key={s.id} value={s.id}>{s.nm.substring(0,28)}</option>)}</select></div></div><div style={{marginBottom:8}}><label style={{display:"flex",alignItems:"center",gap:6,cursor:"pointer",fontSize:17}}><input type="checkbox" checked={autoPull && src} onChange={e=>setAutoPull(e.target.checked)} disabled={!src}/><span style={{color:src?C.tx:C.mt}}>Avtomatsko prevzeni (samo s črtom podatkov)</span></label></div>{autoPull&&src&&<div><div style={{fontSize:16,color:C.mt,marginBottom:2}}>Od katerega meseca?</div><select style={{...sS,width:"100%"}} value={pullMo} onChange={e=>setPullMo(e.target.value)}><option value="all">Vsi zaprti meseci (skupaj)</option><option value="current">Trenutni mesec</option>{MF.map((m,i)=><option key={i} value={String(i)}>{m}</option>)}</select></div>}<div style={{marginBottom:8}}><div style={{fontSize:16,color:C.mt,marginBottom:2}}>Opomba</div><input style={{...sI,width:"100%"}} value={note} onChange={e=>sNote(e.target.value)} placeholder="neobvezno"/></div><div style={{display:"flex",gap:6,justifyContent:"flex-end"}}><button style={sB(false)} onClick={onCancel}>Prekliči</button><button style={sB(true)} onClick={()=>{if(n&&tg)onAdd({name:n,type:t,target:parseFloat(tg),current:0,source:src,note,scope,month:scope==="monthly"?parseInt(mo):null,autoPull:autoPull&&src,pullFromMonth:pullMo,targetDate:targetDate||null})}}>Shrani</button></div></div>}
 
 // Superadmin user creation form
 function CreateUserForm({onAdd}){const[u,sU]=useState('');const[p,sP]=useState('');const[e,sE]=useState('');const[msg,sMsg]=useState('');return<div style={sC}><div style={{fontSize:16,fontWeight:600,marginBottom:6}}>Ustvari novega uporabnika</div><div style={{fontSize:17,color:C.mt,marginBottom:8}}>Samo superadmin lahko ustvari račune. Uporabnik potrebuje email za obnovitev gesla.</div><div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:6,marginBottom:6}}><div><div style={{fontSize:16,color:C.mt,marginBottom:2}}>Uporabniško ime</div><input style={{...sI,width:"100%"}} value={u} onChange={ev=>sU(ev.target.value)} placeholder="npr. Kristina"/></div><div><div style={{fontSize:16,color:C.mt,marginBottom:2}}>Geslo (≥ 6)</div><input style={{...sI,width:"100%"}} type="password" value={p} onChange={ev=>sP(ev.target.value)} placeholder="geslo"/></div><div><div style={{fontSize:16,color:C.mt,marginBottom:2}}>Email</div><input style={{...sI,width:"100%"}} value={e} onChange={ev=>sE(ev.target.value)} placeholder="email@domena.si"/></div></div><button style={sB(true)} onClick={()=>{if(!u.trim()||p.length<6||!e.includes('@')){sMsg('Izpolni vsa polja pravilno.');return}onAdd(u.trim(),p,e.trim());sU('');sP('');sE('');sMsg('Uporabnik ustvarjen!')}}>Ustvari uporabnika</button>{msg&&<div style={{fontSize:17,color:C.gn,marginTop:4}}>{msg}</div>}</div>}
@@ -205,18 +216,32 @@ async function ensureSuperadmin(){
 }
 
 // ===== CATEGORY ENTRY COMPONENT =====
-function CatEntry({cats,title,md,subVis,subRename,expandBreakdown,txnInput,toggleSubVis,setExpandBreakdown,setTxnInput,addTransaction,removeTransaction,updateTransactionComment,uSub}){const sN=(s)=>(subRename&&subRename[s.id])||s.nm;return<div><div style={{fontSize:16,fontWeight:700,color:C.tx,marginBottom:4,marginTop:6}}>{title}</div><div style={sC}>
+function CatEntry({cats,title,md,subVis,subRename,expandBreakdown,txnInput,toggleSubVis,setExpandBreakdown,setTxnInput,addTransaction,removeTransaction,updateTransactionComment,uSub,subAlerts,dayFrac}){
+  const sN=(s)=>(subRename&&subRename[s.id])||s.nm;
+  return<div><div style={{fontSize:16,fontWeight:700,color:C.tx,marginBottom:4,marginTop:6}}>{title}</div><div style={sC}>
   <div style={{display:"grid",gridTemplateColumns:"1fr 55px 55px 45px 40px",gap:6,fontSize:18,color:C.mt,fontWeight:600,padding:"0 0 4px",borderBottom:`1px solid ${C.bd}`}}><span>Postavka</span><span>Plan</span><span>Izvedba</span><span>Razl.€</span><span>%</span></div>
-  {cats.map(cat=><React.Fragment key={cat.id}>
+  {cats.map(cat=>{
+    const visSubs=cat.subs.filter(sub=>subVis[sub.id]!==true);
+    const catActual=visSubs.reduce((s,sub)=>s+(md.subs?.[sub.id]?.actual||0),0);
+    const catPlan=visSubs.reduce((s,sub)=>s+(md.subs?.[sub.id]?.plan||0),0);
+    return<React.Fragment key={cat.id}>
     <div style={{fontSize:17,fontWeight:700,color:C.tx,padding:"5px 0 2px",marginTop:2,paddingLeft:0}}>{cat.nm}</div>
-    {cat.subs.filter(sub=>subVis[sub.id]!==true).map(sub=>{const d=md.subs?.[sub.id]||{plan:0,actual:0,transactions:[],comment:""};const diff=d.plan-d.actual;const pct=d.plan?pc(d.actual,d.plan)+"%":"—";const isExp=expandBreakdown[sub.id];const txnAmt=(txnInput[sub.id]&&typeof txnInput[sub.id]==='object')?txnInput[sub.id].amt:(txnInput[sub.id]||"");const txnCmt=(txnInput[sub.id]&&typeof txnInput[sub.id]==='object')?txnInput[sub.id].cmt:"";
-      return<React.Fragment key={sub.id}><div style={{display:"grid",gridTemplateColumns:"1fr 55px 55px 45px 40px",gap:6,fontSize:16,alignItems:"center",padding:"2px 0 2px 10px",borderBottom:`1px solid ${C.fn}`}}>
-        <div style={{display:"flex",alignItems:"center",gap:3,fontSize:18}}><span>{sN(sub)}</span><button type="button" onClick={()=>toggleSubVis(sub.id)} style={{background:"none",border:"none",cursor:"pointer",padding:0,fontSize:18,color:C.mt,flexShrink:0}}>👁</button></div>
+    {visSubs.map(sub=>{const d=md.subs?.[sub.id]||{plan:0,actual:0,transactions:[],comment:""};const diff=d.plan-d.actual;const pct=d.plan?pc(d.actual,d.plan)+"%":"—";const isExp=expandBreakdown[sub.id];const txnAmt=(txnInput[sub.id]&&typeof txnInput[sub.id]==='object')?txnInput[sub.id].amt:(txnInput[sub.id]||"");const txnCmt=(txnInput[sub.id]&&typeof txnInput[sub.id]==='object')?txnInput[sub.id].cmt:"";
+      const alertThresh=subAlerts&&subAlerts[sub.id];const alertPct=alertThresh>0?alertThresh:80;const isAlerted=alertThresh>0&&d.plan>0&&d.actual>=d.plan*alertThresh/100;
+      const velProj=dayFrac>0.05&&d.actual>0?Math.round(d.actual/dayFrac):null;const velOver=velProj!==null&&d.plan>0&&velProj>d.plan;
+      return<React.Fragment key={sub.id}><div style={{display:"grid",gridTemplateColumns:"1fr 55px 55px 45px 40px",gap:6,fontSize:16,alignItems:"center",padding:"2px 0 2px 10px",borderBottom:`1px solid ${C.fn}`,background:isAlerted?"#fff7ed":undefined}}>
+        <div style={{display:"flex",alignItems:"center",gap:3,fontSize:18}}>
+          <span>{sN(sub)}</span>
+          {isAlerted&&<span title={`Opozorilo: ${alertThresh}% plana`} style={{fontSize:12,background:d.actual>d.plan?"#fee2e2":"#fff7ed",color:d.actual>d.plan?C.rd:C.or,borderRadius:4,padding:"0 3px",fontWeight:700,flexShrink:0}}>{d.actual>d.plan?"🔴":"🟡"}</span>}
+          <button type="button" onClick={()=>toggleSubVis(sub.id)} style={{background:"none",border:"none",cursor:"pointer",padding:0,fontSize:18,color:C.mt,flexShrink:0}}>👁</button>
+        </div>
         <span style={{color:"#999",fontSize:18,textAlign:"right"}}>{d.plan?fN(d.plan):"—"}</span>
         <button type="button" onClick={(e)=>{e.preventDefault();setExpandBreakdown(p=>({...p,[sub.id]:!isExp}))}} style={{background:"none",border:`1px solid ${C.bd}`,borderRadius:4,padding:"2px 4px",fontSize:14,color:C.tx,cursor:"pointer",textAlign:"right",minWidth:45,height:24}}>{fN(d.actual||0)}€ {isExp?"▲":"▼"}</button>
         <span style={{fontSize:11,color:d.plan?(diff>=0?C.gn:C.rd):C.mt,textAlign:"right"}}>{d.plan?(diff>=0?"+":"")+fN(diff):"—"}</span>
         <span style={{fontSize:11,color:d.plan?(pc(d.actual,d.plan)>90?C.rd:C.gn):C.mt,textAlign:"right"}}>{pct}</span>
-      </div>{isExp&&<div style={{padding:"12px 10px",background:"#f9fafb",marginLeft:"10px",borderLeft:`3px solid ${C.bl}`,borderRadius:"0 4px 4px 0",marginTop:2,marginBottom:6}}><div style={{fontSize:13,fontWeight:600,marginBottom:8,color:C.tx}}>Razčlenitev - {sub.nm}</div><div style={{marginBottom:10}}>
+      </div>
+      {velProj!==null&&<div style={{fontSize:11,color:velOver?C.rd:"#666",padding:"1px 10px 1px 22px",borderBottom:`1px solid ${C.fn}`,background:velOver?"#fff5f5":"#f9fafb"}}>⚡ Napoved: <strong>{fmt(velProj)}</strong>{velOver?` (prekoračitev za ${fmt(velProj-d.plan)})`:` / plan ${fmt(d.plan)}`}</div>}
+      {isExp&&<div style={{padding:"12px 10px",background:"#f9fafb",marginLeft:"10px",borderLeft:`3px solid ${C.bl}`,borderRadius:"0 4px 4px 0",marginTop:2,marginBottom:6}}><div style={{fontSize:13,fontWeight:600,marginBottom:8,color:C.tx}}>Razčlenitev - {sN(sub)}</div><div style={{marginBottom:10}}>
         {(d.transactions||[]).map((t,idx)=>{const txnId=t.id||idx;const amt=t.amt||t;const cmt=t.comment||"";const isImp=typeof t==='object'&&t.imported;return<div key={txnId} style={{display:"grid",gridTemplateColumns:"90px 1fr auto",gap:8,alignItems:"center",fontSize:14,padding:"6px 8px",background:isImp?"#eff6ff":"#fff",borderRadius:4,marginBottom:4,border:`1px solid ${isImp?"#bfdbfe":C.bd}`,borderLeft:isImp?`3px solid ${C.bl}`:`1px solid ${C.bd}`}}>
           <span style={{fontWeight:600,color:C.tx}}>{isImp&&<span title="Uvoz iz Excel" style={{fontSize:13,marginRight:3}}>📥</span>}{fN(amt)}€</span>
           <input style={{...sI,height:28,fontSize:13,padding:"4px 8px",background:isImp?"#fff":undefined}} defaultValue={cmt} onBlur={e=>updateTransactionComment&&updateTransactionComment(sub.id,txnId,e.target.value)} placeholder="Komentar (npr. trgovina, datum)"/>
@@ -228,7 +253,16 @@ function CatEntry({cats,title,md,subVis,subRename,expandBreakdown,txnInput,toggl
         <input type="text" placeholder="Komentar (neobvezno)" onChange={(e)=>setTxnInput(p=>({...p,[sub.id]:{amt:txnAmt,cmt:e.target.value}}))} value={txnCmt} onKeyPress={(e)=>{if(e.key==="Enter"){e.preventDefault();e.stopPropagation();const val=parseFloat(txnAmt);if(val>0){addTransaction(sub.id,txnAmt,txnCmt);setTxnInput(p=>({...p,[sub.id]:""}))}return false}}} style={{...sI,height:36,fontSize:14,padding:"6px 10px"}}/>
         <button type="button" onClick={(e)=>{e.preventDefault();e.stopPropagation();const val=parseFloat(txnAmt);if(val>0){addTransaction(sub.id,txnAmt,txnCmt);setTxnInput(p=>({...p,[sub.id]:""}))}return false}} style={{...sB(true),padding:"6px 16px",height:36,fontSize:14,fontWeight:600}}>Dodaj</button>
       </div><div style={{textAlign:"right",fontSize:12,fontWeight:600,color:C.tx,padding:"4px 0"}}>Skupaj: <span style={{fontSize:16,color:C.bl}}>{fN(d.actual||0)}€</span></div></div>}</React.Fragment>})}
-  </React.Fragment>)}</div></div>}
+    {visSubs.length>1&&catPlan>0&&<div style={{display:"grid",gridTemplateColumns:"1fr 55px 55px 45px 40px",gap:6,fontSize:13,alignItems:"center",padding:"2px 0 2px 10px",background:"#f0f7ff",borderBottom:`1px solid ${C.bd}`,fontWeight:600,color:"#334"}}>
+      <span style={{color:C.bl}}>Skupaj {cat.nm}</span>
+      <span style={{color:"#999",textAlign:"right"}}>{fN(catPlan)}</span>
+      <span style={{textAlign:"right",color:catActual>catPlan?C.rd:C.gn}}>{fN(catActual)}</span>
+      <span style={{textAlign:"right",fontSize:11,color:catPlan?(catPlan-catActual>=0?C.gn:C.rd):C.mt}}>{catPlan?(catPlan-catActual>=0?"+":"")+fN(catPlan-catActual):"—"}</span>
+      <span style={{textAlign:"right",fontSize:11,color:catActual>catPlan?C.rd:C.gn}}>{catPlan?pc(catActual,catPlan)+"%":"—"}</span>
+    </div>}
+  </React.Fragment>})}
+  </div></div>
+}
 
 // ===== MAIN APP =====
 export default function App(){
@@ -248,12 +282,9 @@ export default function App(){
   const[data,setData]=useState(()=>ld('dp_data',{2026:initY()}));
   const[cLog,setCLog]=useState(()=>ld('dp_log',[]));
   const[goals,setGoals]=useState(()=>ld('dp_goals',[]));
-  const[bPct,setBPct]=useState(()=>ld('dp_pct',{}));const[pMd,setPMd]=useState(()=>ld('dp_pm',{}));const[pFx,setPFx]=useState(()=>ld('dp_pf',{}));
-  const[manualBudget,setManualBudget]=useState(()=>ld('dp_mb',3600));
+  const[budgetProfiles,setBudgetProfiles]=useState(initProfiles);
+  const[activeProfId,setActiveProfId]=useState(()=>ld('dp_activeprofid',(initProfiles().find(p=>p.isDefault)||initProfiles()[0])?.id||'moj_plan'));
   const[scratchBudget,setScratchBudget]=useState(0);
-  const[nepPct,setNepPct]=useState(()=>ld('dp_neppct',5));
-  const[nepMd,setNepMd]=useState(()=>ld('dp_nepmd','pct'));
-  const[nepFx,setNepFx]=useState(()=>ld('dp_nepfx',150));
   const[cryU,setCryU]=useState(false);const[cryP,setCryP]=useState("");
   const[cryH,setCryH]=useState(()=>ld('dp_cry',[{coin:"BTC",amount:0.05,avgPrice:45000},{coin:"ETH",amount:1.2,avgPrice:3200}]));
   const[compYr,setCompYr]=useState(null);const[showImp,setShowImp]=useState(false);const[impYr,setImpYr]=useState(2025);
@@ -281,6 +312,16 @@ export default function App(){
   const[adminViews,setAdminViews]=useState(()=>ld('dp_adminviews',CATS.map(c=>c.id))); // cats visible to admin
   const[subVis,setSubVis]=useState(()=>ld('dp_subvis',{})); // subcategory visibility
   const[subRename,setSubRename]=useState(()=>ld('dp_subren',{})); // {subId:newName}
+  const[customSubs,setCustomSubs]=useState(()=>ld('dp_customsubs',{})); // {catId:[{id,nm,dp}]}
+  const[customCatGroups,setCustomCatGroups]=useState(()=>ld('dp_customcatgroups',[])); // [{id,nm,tp,subs:[]}]
+  const[subOrder,setSubOrder]=useState(()=>ld('dp_suborder',{})); // {catId:[subId,...]}
+  const[subAlerts,setSubAlerts]=useState(()=>ld('dp_subalerts',{})); // {subId: threshold%}
+  const[planManageMode,setPlanManageMode]=useState(false);
+  const[addSubCat,setAddSubCat]=useState(null); // catId of category being expanded for add
+  const[addSubNm,setAddSubNm]=useState('');
+  const[addCatGrpForm,setAddCatGrpForm]=useState(null); // {nm:'',tp:'var'} when open
+  const[showPlanHistory,setShowPlanHistory]=useState(false);
+  const[bulkAdjType,setBulkAdjType]=useState('all');const[bulkAdjPct,setBulkAdjPct]=useState(0);
   const[expandBreakdown,setExpandBreakdown]=useState({}); // which subcategory breakdowns are expanded
   const[txnInput,setTxnInput]=useState({}); // transaction input values per subcategory
   const[auditLog,setAuditLog]=useState(()=>ld('dp_audit',[]));
@@ -297,11 +338,24 @@ export default function App(){
   // Editable lists
   const[itList,setItList]=useState(()=>ld('dp_it',["Plača","Nagrada","Regres","Božičnica","Otroški dodatek","Porodniška","Refund"]));
   const[kuList,setKuList]=useState(()=>ld('dp_ku',["Amazon","HM","About You","Sports Direct","Mohito","Notino","Stradivarius","Grand Hotel Bernardin","Best Secret","Equa","Lelosi","DDStepOnline","Fever vstopnice"]));
+  // Tab customization
+  const[tabHidden,setTabHidden]=useState(()=>ld('dp_tabhidden',[]));
+  const[tabNames,setTabNames]=useState(()=>ld('dp_tabnames',{}));
+  // Mesečni vnos
+  const[hideIncome,setHideIncome]=useState(()=>ld('dp_hideinc',false));
+  // Settings UI
+  const[settingsOpen,setSettingsOpen]=useState({account:true,security:false,tabs:false,cats:false,lists:false,data:false,snapshots:false});
+  const togSec=(k)=>setSettingsOpen(p=>({...p,[k]:!p[k]}));
+  // Plan tab profile UI
+  const[showNewProf,setShowNewProf]=useState(false);const[newProfName,setNewProfName]=useState('');
+  const[renamingProf,setRenamingProf]=useState(false);const[renameName,setRenameName]=useState('');
   // Settings
   const[sNP,setSNP]=useState('');const[sNP2,setSNP2]=useState('');const[sCP,setSCP]=useState('');const[sMsg,setSMsg]=useState('');
 
   // Persist
-  useEffect(()=>{sv('dp_data',data)},[data]);useEffect(()=>{sv('dp_log',cLog.slice(0,200))},[cLog]);useEffect(()=>{sv('dp_goals',goals)},[goals]);useEffect(()=>{sv('dp_cry',cryH)},[cryH]);useEffect(()=>{sv('dp_pct',bPct)},[bPct]);useEffect(()=>{sv('dp_pm',pMd)},[pMd]);useEffect(()=>{sv('dp_pf',pFx)},[pFx]);useEffect(()=>{sv('dp_sv',savVis)},[savVis]);useEffect(()=>{sv('dp_mb',manualBudget)},[manualBudget]);useEffect(()=>{sv('dp_neppct',nepPct)},[nepPct]);useEffect(()=>{sv('dp_nepmd',nepMd)},[nepMd]);useEffect(()=>{sv('dp_nepfx',nepFx)},[nepFx]);useEffect(()=>{sv('dp_savdata',savData)},[savData]);useEffect(()=>{sv('dp_pending',pendingRegs)},[pendingRegs]);useEffect(()=>{sv('dp_simman',simManual)},[simManual]);useEffect(()=>{sv('dp_simcats',simCats)},[simCats]);useEffect(()=>{sv('dp_simret',simReturn)},[simReturn]);useEffect(()=>{sv('dp_siminit',simInitial)},[simInitial]);useEffect(()=>{sv('dp_simev',simEvents)},[simEvents]);useEffect(()=>{sv('dp_adminviews',adminViews)},[adminViews]);useEffect(()=>{sv('dp_subvis',subVis)},[subVis]);useEffect(()=>{sv('dp_subren',subRename)},[subRename]);useEffect(()=>{sv('dp_audit',auditLog.slice(0,500))},[auditLog]);useEffect(()=>{sv('dp_adminconf',adminConf)},[adminConf]);useEffect(()=>{sv('dp_it',itList)},[itList]);useEffect(()=>{sv('dp_ku',kuList)},[kuList]);useEffect(()=>{sv('dp_wishes',wishes)},[wishes]);useEffect(()=>{sv('dp_occasions',occasions)},[occasions]);
+  useEffect(()=>{sv('dp_data',data)},[data]);useEffect(()=>{sv('dp_log',cLog.slice(0,200))},[cLog]);useEffect(()=>{sv('dp_goals',goals)},[goals]);useEffect(()=>{sv('dp_cry',cryH)},[cryH]);useEffect(()=>{sv('dp_profiles',budgetProfiles)},[budgetProfiles]);useEffect(()=>{sv('dp_activeprofid',activeProfId)},[activeProfId]);useEffect(()=>{sv('dp_sv',savVis)},[savVis]);useEffect(()=>{sv('dp_savdata',savData)},[savData]);useEffect(()=>{sv('dp_pending',pendingRegs)},[pendingRegs]);useEffect(()=>{sv('dp_simman',simManual)},[simManual]);useEffect(()=>{sv('dp_simcats',simCats)},[simCats]);useEffect(()=>{sv('dp_simret',simReturn)},[simReturn]);useEffect(()=>{sv('dp_siminit',simInitial)},[simInitial]);useEffect(()=>{sv('dp_simev',simEvents)},[simEvents]);useEffect(()=>{sv('dp_adminviews',adminViews)},[adminViews]);useEffect(()=>{sv('dp_subvis',subVis)},[subVis]);useEffect(()=>{sv('dp_subren',subRename)},[subRename]);useEffect(()=>{sv('dp_customsubs',customSubs)},[customSubs]);useEffect(()=>{sv('dp_customcatgroups',customCatGroups)},[customCatGroups]);useEffect(()=>{sv('dp_suborder',subOrder)},[subOrder]);useEffect(()=>{sv('dp_subalerts',subAlerts)},[subAlerts]);useEffect(()=>{sv('dp_audit',auditLog.slice(0,500))},[auditLog]);useEffect(()=>{sv('dp_adminconf',adminConf)},[adminConf]);useEffect(()=>{sv('dp_it',itList)},[itList]);useEffect(()=>{sv('dp_ku',kuList)},[kuList]);useEffect(()=>{sv('dp_wishes',wishes)},[wishes]);useEffect(()=>{sv('dp_occasions',occasions)},[occasions]);useEffect(()=>{sv('dp_tabhidden',tabHidden)},[tabHidden]);useEffect(()=>{sv('dp_tabnames',tabNames)},[tabNames]);useEffect(()=>{sv('dp_hideinc',hideIncome)},[hideIncome]);
+  // Daily snapshot (once per day)
+  useEffect(()=>{const today=new Date().toISOString().split('T')[0];const snaps=ld('dp_snapshots',{});if(!snaps[today]){const snap={};['dp_data','dp_goals','dp_cry','dp_wishes','dp_savdata','dp_profiles','dp_subvis','dp_subren','dp_simev','dp_simman','dp_simcats','dp_simret','dp_siminit'].forEach(k=>{try{const v=localStorage.getItem(k);snap[k]=v?JSON.parse(v):null}catch{}});const dates=Object.keys(snaps).sort().reverse();const trimmed={};dates.slice(0,29).forEach(d=>trimmed[d]=snaps[d]);trimmed[today]=snap;sv('dp_snapshots',trimmed)}},[]);
 
   useEffect(()=>{if(authSt==='init'){if(sessionStorage.getItem('dp_s')){setAuthSt('auth');setCurUser(sessionStorage.getItem('dp_u'));setCurRole(sessionStorage.getItem('dp_r'))}else setAuthSt('login')}},[]);
 
@@ -314,12 +368,22 @@ export default function App(){
   const doResetPwd=()=>{localStorage.removeItem('dp_accounts');ensureSuperadmin();setAErr('Gesla ponastavljena. Prijavi se kot Tadej.');setShowForgot(false)};
   const doChgPwd=async(user,newPwd)=>{if(newPwd.length<6){setSMsg('≥ 6 znakov');return}const accs=JSON.parse(localStorage.getItem('dp_accounts')||'[]');const i=accs.findIndex(a=>a.username===user);if(i<0)return;const salt=Array.from(crypto.getRandomValues(new Uint8Array(16))).join('');accs[i]={...accs[i],hash:await hPwd(newPwd,salt),salt};localStorage.setItem('dp_accounts',JSON.stringify(accs));setSMsg(`Geslo za ${user} spremenjeno!`)};
   const isSA=curRole==='superadmin';
-  const visibleCats=isSA?CATS:CATS.filter(c=>adminViews.includes(c.id));
+  // Active budget profile helpers
+  const AP=budgetProfiles.find(p=>p.id===activeProfId)||budgetProfiles[0]||{id:'',name:'',budget:3600,bPct:{},pMd:{},pFx:{},nepPct:5,nepMd:'pct',nepFx:150,isDefault:false};
+  const updProf=(key,val)=>setBudgetProfiles(ps=>ps.map(p=>p.id===activeProfId?{...p,[key]:val}:p));
+  const defProf=budgetProfiles.find(p=>p.isDefault)||budgetProfiles[0];
+
+  const sortSubs=(catId,subs)=>{const o=subOrder[catId];if(!o||!o.length)return subs;return[...subs].sort((a,b)=>{const ai=o.indexOf(a.id),bi=o.indexOf(b.id);if(ai<0&&bi<0)return 0;if(ai<0)return 1;if(bi<0)return-1;return ai-bi})};
+  const effectiveCats=[...CATS.map(cat=>({...cat,subs:sortSubs(cat.id,[...cat.subs,...(customSubs[cat.id]||[])])})),...customCatGroups.map(cat=>({...cat,subs:sortSubs(cat.id,cat.subs||[])}))];
+  const effectiveAS=effectiveCats.flatMap(c=>c.subs);
+  const efxT=(mdata,f)=>effectiveCats.filter(c=>c.tp==="fixed").reduce((s,c)=>s+cT(mdata,c,f),0);
+  const evrT=(mdata,f)=>effectiveCats.filter(c=>c.tp==="var").reduce((s,c)=>s+cT(mdata,c,f),0);
+  const visibleCats=isSA?effectiveCats:effectiveCats.filter(c=>adminViews.includes(c.id));
 
   // Data helpers
   const yd=data[yr]||initY();const md=yd[mo]||initM();
   const uxtT=(mdata)=>(mdata.unexpectedItems||[]).reduce((s,it)=>s+it.amount,0);
-  const tInc=iT(md);const tFx=fxT(md,'actual');const tVr=vrT(md,'actual');const tUxt=uxtT(md);const tAc=tFx+tVr+tUxt;
+  const tInc=iT(md);const tFx=efxT(md,'actual');const tVr=evrT(md,'actual');const tUxt=uxtT(md);const tAc=tFx+tVr+tUxt;
 
   const uSub=(subId,field,val)=>{setData(prev=>{const n=JSON.parse(JSON.stringify(prev));if(!n[yr])n[yr]=initY();if(!n[yr][mo])n[yr][mo]=initM();if(!n[yr][mo].subs[subId])n[yr][mo].subs[subId]={plan:0,actual:0,transactions:[],comment:""};const old=n[yr][mo].subs[subId][field];n[yr][mo].subs[subId][field]=field==="comment"?val:(parseFloat(val)||0);if(field==="plan"&&parseFloat(val)!==old)setCLog(l=>[{date:new Date().toLocaleDateString("sl-SI"),sub:subId,oldVal:old||0,newVal:parseFloat(val)||0,who:curUser||"?"},...l]);return n})};
   const addTransaction=(subId,amount,comment="")=>{setData(prev=>{const n=JSON.parse(JSON.stringify(prev));if(!n[yr])n[yr]=initY();if(!n[yr][mo])n[yr][mo]=initM();if(!n[yr][mo].subs[subId])n[yr][mo].subs[subId]={plan:0,actual:0,transactions:[],comment:""};if(!Array.isArray(n[yr][mo].subs[subId].transactions))n[yr][mo].subs[subId].transactions=[];const amt=parseFloat(amount)||0;if(amt>0){const txnId=Date.now()+Math.random();n[yr][mo].subs[subId].transactions.push({id:txnId,amt,comment:comment||""});n[yr][mo].subs[subId].actual=n[yr][mo].subs[subId].transactions.reduce((s,t)=>s+(t.amt||t),0)}return n})};
@@ -330,8 +394,12 @@ export default function App(){
   const addUX=(d,a,p)=>{setData(prev=>{const n=JSON.parse(JSON.stringify(prev));if(!n[yr])n[yr]=initY();if(!n[yr][mo])n[yr][mo]=initM();n[yr][mo].unexpectedItems.push({desc:d,amount:parseFloat(a)||0,person:p});return n})};
   const toggleClose=(m)=>{setData(prev=>{const n=JSON.parse(JSON.stringify(prev));if(!n[yr])n[yr]=initY();if(!n[yr][m])n[yr][m]=initM();n[yr][m].closed=!n[yr][m].closed;return n})};
   const syncPlanToEntry=()=>{setData(prev=>{const n=JSON.parse(JSON.stringify(prev));if(!n[yr])n[yr]=initY();for(let m=0;m<12;m++){if(!n[yr][m])n[yr][m]=initM();CATS.forEach(cat=>{cat.subs.forEach(sub=>{if(md.subs?.[sub.id]?.plan)n[yr][m].subs[sub.id]={...n[yr][m].subs[sub.id],plan:md.subs[sub.id].plan}})})}return n})};
-  const syncPctToPlan=()=>{const base=manualBudget;AS.forEach(sub=>{const mode=pMd[sub.id]||"fixed";const target=mode==="pct"?Math.round(base*(bPct[sub.id]||0)/100):(pFx[sub.id]||0);uSub(sub.id,"plan",target)})};
+  const syncPctToPlan=(prof)=>{const p=prof||defProf;if(!p)return;const base=p.budget;effectiveAS.forEach(sub=>{const mode=p.pMd[sub.id]||"fixed";const target=mode==="pct"?Math.round(base*(p.bPct[sub.id]||0)/100):(p.pFx[sub.id]||0);uSub(sub.id,"plan",target)})};;
   const toggleSubVis=(subId)=>{setSubVis(prev=>({...prev,[subId]:!prev[subId]}))};
+  const moveSubUp=(catId,subId)=>{setSubOrder(prev=>{const cat=effectiveCats.find(c=>c.id===catId);if(!cat)return prev;const o=prev[catId]||cat.subs.map(s=>s.id);const idx=o.indexOf(subId);if(idx<=0)return prev;const n=[...o];[n[idx-1],n[idx]]=[n[idx],n[idx-1]];return{...prev,[catId]:n}})};
+  const moveSubDown=(catId,subId)=>{setSubOrder(prev=>{const cat=effectiveCats.find(c=>c.id===catId);if(!cat)return prev;const o=prev[catId]||cat.subs.map(s=>s.id);const idx=o.indexOf(subId);if(idx<0||idx>=o.length-1)return prev;const n=[...o];[n[idx],n[idx+1]]=[n[idx+1],n[idx]];return{...prev,[catId]:n}})};
+  const uNote=(text)=>{setData(prev=>{const n=JSON.parse(JSON.stringify(prev));if(!n[yr])n[yr]=initY();if(!n[yr][mo])n[yr][mo]=initM();n[yr][mo].note=text;return n})};
+  const copyPlanFromLastYear=()=>{const py=yr-1;const pyd=data[py]||{};const cms=[];for(let m=0;m<12;m++){if((pyd[m]||{}).closed)cms.push(pyd[m]||initM())}if(cms.length===0){alert(`V letu ${py} ni zaključenih mesecev.`);return}effectiveAS.forEach(sub=>{const avg=Math.round(cms.reduce((s,md2)=>s+(md2.subs?.[sub.id]?.actual||0),0)/cms.length);if(avg>0)uSub(sub.id,"plan",avg)});alert(`Plan prenesen iz dejanskih ${py} (${cms.length} mesecev).`)};
   const logAudit=(action,details)=>{if(isSA||curRole==="admin")setAuditLog(prev=>[{timestamp:new Date().toLocaleString("sl-SI"),user:curUser||"?",action,details},...prev])};
 
   // Export
@@ -369,7 +437,7 @@ export default function App(){
     const yrs=Math.max(1,eY-sY+1);
 
     let yrInc=0,yrExp=0,yrUxt=0,yrSav=0,closedCount=0;
-    for(let m=0;m<12;m++){const mdata=yd[m]||initM();if(mdata.closed){yrInc+=iT(mdata);const selCats=CATS.filter(c=>simCats.includes(c.id));yrExp+=selCats.reduce((s,c)=>s+cT(mdata,c,'actual'),0);yrUxt+=uxtT(mdata);yrSav+=cT(mdata,CATS.find(c=>c.id==="savings_inv")||{subs:[]},'actual');closedCount++}};
+    for(let m=0;m<12;m++){const mdata=yd[m]||initM();if(mdata.closed){yrInc+=iT(mdata);const selCats=effectiveCats.filter(c=>simCats.includes(c.id));yrExp+=selCats.reduce((s,c)=>s+cT(mdata,c,'actual'),0);yrUxt+=uxtT(mdata);yrSav+=cT(mdata,effectiveCats.find(c=>c.id==="savings_inv")||{subs:[]},'actual');closedCount++}};
     const baseInc=simManual.income!=null?simManual.income:(closedCount>0?yrInc/closedCount:(tInc||3600));
     const baseExp=simManual.expense!=null?simManual.expense:(closedCount>0?(yrExp+yrUxt)/closedCount:(tAc||3100));
     const baseSav=simManual.savings!=null?simManual.savings:(closedCount>0?yrSav/closedCount:500);
@@ -425,7 +493,7 @@ export default function App(){
   });
 
   const pieData=visibleCats.map((c,i)=>({name:c.nm.split(" ")[0],value:cT(md,c,'actual'),color:CL[i%CL.length]})).filter(d=>d.value>0);
-  const trendData=MS.map((m,i)=>{const mdata=yd[i]||initM();return{name:m,Prihodki:iT(mdata),Odhodki:fxT(mdata,'actual')+vrT(mdata,'actual')+uxtT(mdata),closed:mdata.closed}});
+  const trendData=MS.map((m,i)=>{const mdata=yd[i]||initM();return{name:m,Prihodki:iT(mdata),Odhodki:efxT(mdata,'actual')+evrT(mdata,'actual')+uxtT(mdata),closed:mdata.closed}});
 
   const navP=()=>{if(mo===0){setMo(11);setYr(y=>y-1)}else setMo(m=>m-1)};
   const navN=()=>{if(mo===11){setMo(0);setYr(y=>y+1)}else setMo(m=>m+1)};
@@ -469,16 +537,16 @@ export default function App(){
     </div>
     {/* NAV */}
     <div style={{display:"flex",gap:0,background:C.tx,padding:"0 4px",overflowX:"auto"}}>
-      {[["dash","Nadzorna plošča"],["entry","Mesečni vnos"],["annual","Letni pregled"],["goals","Cilji"],["sim","Simulacija"],["pct","% razdelitev"],["wishes","Wishlist"],["varsav","Varčevanje"],["settings","Nastavitve"],["crypto","🔒"]].filter(([k,l])=>isSA||(k!=="varsav"&&k!=="settings"&&k!=="crypto"&&k!=="wishes")||(k==="varsav"&&adminConf[curUser]?.varsav)||(k==="settings"&&adminConf[curUser]?.settings)||(k==="crypto"&&adminConf[curUser]?.crypto)||(k==="wishes")).map(([k,l])=>
-        <div key={k} style={{padding:"10px 10px",fontSize:17,fontWeight:vw===k?600:400,color:vw===k?"#f8f7f4":"#8888a0",cursor:"pointer",borderBottom:vw===k?"2px solid #60a5fa":"2px solid transparent",whiteSpace:"nowrap"}} onClick={()=>setVw(k)}>{l}</div>
+      {[["dash","Pregled"],["pct","Plan"],["entry","Mesečni vnos"],["annual","Letni pregled"],["goals","Cilji"],["sim","Simulacija"],["wishes","Wishlist"],["varsav","Varčevanje"],["settings","Nastavitve"],["crypto","🔒"]].filter(([k])=>!tabHidden.includes(k)&&(isSA||(k!=="varsav"&&k!=="settings"&&k!=="crypto"&&k!=="wishes")||(k==="varsav"&&adminConf[curUser]?.varsav)||(k==="settings"&&adminConf[curUser]?.settings)||(k==="crypto"&&adminConf[curUser]?.crypto)||(k==="wishes"))).map(([k,def])=>
+        <div key={k} style={{padding:"10px 10px",fontSize:17,fontWeight:vw===k?600:400,color:vw===k?"#f8f7f4":"#8888a0",cursor:"pointer",borderBottom:vw===k?"2px solid #60a5fa":"2px solid transparent",whiteSpace:"nowrap"}} onClick={()=>setVw(k)}>{tabNames[k]||def}</div>
       )}
     </div>
     <div style={{padding:"1rem 1.25rem 2rem"}}>
 
-    {/* ===== NADZORNA PLOŠČA ===== */}
+    {/* ===== PREGLED ===== */}
     {vw==="dash"&&<div>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8,flexWrap:"wrap",gap:6}}>
-        <h2 style={{fontSize:24,fontWeight:700,margin:0}}>Nadzorna plošča</h2>
+        <h2 style={{fontSize:24,fontWeight:700,margin:0}}>{tabNames.dash||"Pregled"}</h2>
         <div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap"}}>
           {YPk}
           <button onClick={()=>setShowImp(!showImp)} style={{...sB(false),fontSize:16}}>Uvoz</button>
@@ -501,41 +569,20 @@ export default function App(){
       {/* Import */}
       {showImp&&<div style={{...sC,background:"#f0f7ff",border:"1px dashed #93c5fd"}}><div style={{fontSize:18,fontWeight:600,color:C.bl,marginBottom:4}}>Uvozi iz Excel</div><div style={{display:"flex",gap:8,alignItems:"center",marginBottom:8,flexWrap:"wrap"}}><span style={{fontSize:17}}>V leto:</span><select style={{...sS,width:70}} value={impYr} onChange={e=>setImpYr(parseInt(e.target.value))}>{[2020,2021,2022,2023,2024,2025,2026,2027,2028].map(y=><option key={y} value={y}>{y}</option>)}</select><input type="file" accept=".xlsx,.xls" onChange={handleImpFile} style={{fontSize:18}}/></div>{impPrev&&<div style={{border:"1px solid #e8e6e1",borderRadius:6,padding:8,background:"#fff",maxHeight:160,overflowY:"auto",marginBottom:8}}><div style={{fontSize:17,fontWeight:600,marginBottom:4}}>Predogled ({impPrev.preview.length} vnosov → {impYr}):</div><table style={{width:"100%",fontSize:16,borderCollapse:"collapse"}}><thead><tr><th style={{textAlign:"left",padding:2}}>Mesec</th><th style={{textAlign:"left",padding:2}}>Postavka</th><th style={{textAlign:"right",padding:2}}>Izvedba</th></tr></thead><tbody>{impPrev.preview.slice(0,20).map((r,i)=><tr key={i}><td style={{padding:2}}>{r.month}</td><td style={{padding:2}}>{r.label.substring(0,25)}</td><td style={{textAlign:"right",padding:2}}>{fmt(r.actual)}</td></tr>)}</tbody></table><div style={{display:"flex",gap:6,marginTop:6}}><button style={sB(true)} onClick={doImport}>Potrdi uvoz</button><button style={sB(false)} onClick={()=>setImpPrev(null)}>Prekliči</button></div></div>}{impLog.map((l,i)=><div key={i} style={{fontSize:17,color:l.type==="ok"?C.gn:C.rd}}>{l.msg}</div>)}</div>}
 
-      {/* Top metrics */}
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:10}}>
-        {/* Left: Prihodki */}
-        <div style={{...sC,borderLeft:`4px solid ${C.gn}`}}><div style={{fontSize:11,color:C.mt,textTransform:"uppercase",letterSpacing:0.5,marginBottom:1}}>Prihodki</div><div style={{fontSize:28,fontWeight:700,color:C.gn}}>{fmt(tInc)}</div></div>
-        {/* Right: Odhodki total */}
-        <div style={{...sC,borderLeft:`4px solid ${C.rd}`}}><div style={{fontSize:11,color:C.mt,textTransform:"uppercase",letterSpacing:0.5,marginBottom:1}}>Odhodki skupaj</div><div style={{fontSize:28,fontWeight:700,color:C.rd}}>{fmt(tAc)}</div></div>
-      </div>
-
-      {/* Metrics split - Left: Fiksni, Right: Variabilni */}
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:10}}>
-        {/* Left Half: Fiksni stroški */}
-        <div>
-          <div style={{fontSize:16,fontWeight:700,color:C.tx,marginBottom:4}}>Fiksni stroški</div>
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
-            <div style={{...sC,borderLeft:`4px solid #d97706`}}><div style={{fontSize:11,color:C.mt,textTransform:"uppercase",letterSpacing:0.5,marginBottom:2}}>Planirano</div><div style={{fontSize:20,fontWeight:700}}>{fmt(CATS.filter(c=>c.tp==="fixed").reduce((s,c)=>s+cT(md,c,'plan'),0))}</div></div>
-            <div style={{...sC,borderLeft:`4px solid #d97706`}}><div style={{fontSize:11,color:C.mt,textTransform:"uppercase",letterSpacing:0.5,marginBottom:2}}>Izvedeno</div><div style={{fontSize:20,fontWeight:700}}>{fmt(tFx)}</div></div>
-          </div>
+      {/* KPI grid: left=Prihodki/Odhodki/Razlika, right=Fiksni/Variabilni/Varčevanje */}
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:10,alignItems:"start"}}>
+        {/* Left column */}
+        <div style={{display:"flex",flexDirection:"column",gap:6}}>
+          <div style={{...sC,borderLeft:`4px solid ${C.gn}`,marginBottom:0}}><div style={{fontSize:11,color:C.mt,textTransform:"uppercase",letterSpacing:0.5,marginBottom:1}}>Prihodki</div><div style={{fontSize:28,fontWeight:700,color:C.gn}}>{fmt(tInc)}</div></div>
+          <div style={{...sC,borderLeft:`4px solid ${C.rd}`,marginBottom:0}}><div style={{fontSize:11,color:C.mt,textTransform:"uppercase",letterSpacing:0.5,marginBottom:1}}>Odhodki</div><div style={{fontSize:28,fontWeight:700,color:C.rd}}>{fmt(tAc)}</div></div>
+          <div style={{...sC,borderLeft:`4px solid ${tInc-tAc>=0?C.gn:C.rd}`,marginBottom:0}}><div style={{fontSize:11,color:C.mt,textTransform:"uppercase",letterSpacing:0.5,marginBottom:2}}>Razlika</div><div style={{fontSize:24,fontWeight:700,color:tInc-tAc>=0?C.gn:C.rd}}>{tInc-tAc>=0?"+":""}{fmt(tInc-tAc)}</div></div>
         </div>
-
-        {/* Right Half: Variabilni stroški */}
-        <div>
-          <div style={{fontSize:16,fontWeight:700,color:C.tx,marginBottom:4}}>Variabilni stroški</div>
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
-            <div style={{...sC,borderLeft:`4px solid #0891b2`}}><div style={{fontSize:11,color:C.mt,textTransform:"uppercase",letterSpacing:0.5,marginBottom:2}}>Planirano</div><div style={{fontSize:20,fontWeight:700}}>{fmt(CATS.filter(c=>c.tp==="var").reduce((s,c)=>s+cT(md,c,'plan'),0))}</div></div>
-            <div style={{...sC,borderLeft:`4px solid #0891b2`}}><div style={{fontSize:11,color:C.mt,textTransform:"uppercase",letterSpacing:0.5,marginBottom:2}}>Izvedeno</div><div style={{fontSize:20,fontWeight:700}}>{fmt(tVr)}</div></div>
-          </div>
+        {/* Right column */}
+        <div style={{display:"flex",flexDirection:"column",gap:6}}>
+          <div style={{...sC,borderLeft:`4px solid #d97706`,marginBottom:0}}><div style={{fontSize:11,color:C.mt,textTransform:"uppercase",letterSpacing:0.5,marginBottom:2}}>Fiksni stroški</div><div style={{display:"flex",gap:8,alignItems:"baseline"}}><span style={{fontSize:13,color:C.mt}}>Plan:</span><span style={{fontSize:16,fontWeight:700}}>{fmt(effectiveCats.filter(c=>c.tp==="fixed").reduce((s,c)=>s+cT(md,c,'plan'),0))}</span><span style={{fontSize:13,color:C.mt}}>Realizirano:</span><span style={{fontSize:16,fontWeight:700}}>{fmt(tFx)}</span></div></div>
+          <div style={{...sC,borderLeft:`4px solid #0891b2`,marginBottom:0}}><div style={{fontSize:11,color:C.mt,textTransform:"uppercase",letterSpacing:0.5,marginBottom:2}}>Variabilni stroški</div><div style={{display:"flex",gap:8,alignItems:"baseline"}}><span style={{fontSize:13,color:C.mt}}>Plan:</span><span style={{fontSize:16,fontWeight:700}}>{fmt(effectiveCats.filter(c=>c.tp==="var").reduce((s,c)=>s+cT(md,c,'plan'),0))}</span><span style={{fontSize:13,color:C.mt}}>Realizirano:</span><span style={{fontSize:16,fontWeight:700}}>{fmt(tVr)}</span></div></div>
+          <div style={{...sC,borderLeft:`4px solid ${C.bl}`,marginBottom:0,position:"relative"}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:2}}><span style={{fontSize:11,color:C.mt,textTransform:"uppercase",letterSpacing:0.5}}>Varčevanje</span><span onClick={()=>setShowSavCfg(!showSavCfg)} style={{...sT("#dbeafe",C.bl),fontSize:14,cursor:"pointer",padding:"1px 5px"}}>⚙</span></div><div style={{fontSize:24,fontWeight:700,color:C.bl}}>{fmt(savVis.reduce((s,id)=>s+(md.subs?.[id]?.actual||0),0))}</div>{showSavCfg&&<div style={{position:"absolute",top:"100%",right:0,zIndex:20,background:"#fff",border:`1px solid ${C.bd}`,borderRadius:6,padding:8,minWidth:180,boxShadow:"0 2px 8px rgba(0,0,0,0.1)"}}>{effectiveCats.find(c=>c.id==="savings_inv").subs.map(s=><label key={s.id} style={{display:"flex",alignItems:"center",gap:4,fontSize:16,padding:"2px 0",cursor:"pointer"}}><input type="checkbox" checked={savVis.includes(s.id)} onChange={e=>{if(e.target.checked)setSavVis(v=>[...v,s.id]);else setSavVis(v=>v.filter(x=>x!==s.id))}}/>{s.nm.substring(0,20)}</label>)}<button onClick={()=>setShowSavCfg(false)} style={{...sB(true),height:20,fontSize:18,marginTop:3,width:"100%"}}>OK</button></div>}</div>
         </div>
-      </div>
-
-      {/* Bottom metrics: Razlika & Varčevanje */}
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:10}}>
-        {/* Razlika */}
-        <div style={{...sC,borderLeft:`4px solid ${tInc-tAc>=0?C.gn:C.rd}`}}><div style={{fontSize:11,color:C.mt,textTransform:"uppercase",letterSpacing:0.5,marginBottom:2}}>Razlika (Prihodki - Odhodki)</div><div style={{fontSize:24,fontWeight:700,color:tInc-tAc>=0?C.gn:C.rd}}>{tInc-tAc>=0?"+":""}{fmt(tInc-tAc)}</div></div>
-        {/* Savings */}
-        <div style={{...sC,borderLeft:`4px solid ${C.bl}`,position:"relative"}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:2}}><span style={{fontSize:11,color:C.mt,textTransform:"uppercase",letterSpacing:0.5}}>Varčevanje</span><span onClick={()=>setShowSavCfg(!showSavCfg)} style={{...sT("#dbeafe",C.bl),fontSize:14,cursor:"pointer",padding:"1px 5px"}}>⚙</span></div><div style={{fontSize:24,fontWeight:700,color:C.bl}}>{fmt(savVis.reduce((s,id)=>s+(md.subs?.[id]?.actual||0),0))}</div>{showSavCfg&&<div style={{position:"absolute",top:"100%",right:0,zIndex:20,background:"#fff",border:`1px solid ${C.bd}`,borderRadius:6,padding:8,minWidth:180,boxShadow:"0 2px 8px rgba(0,0,0,0.1)"}}>{CATS.find(c=>c.id==="savings_inv").subs.map(s=><label key={s.id} style={{display:"flex",alignItems:"center",gap:4,fontSize:16,padding:"2px 0",cursor:"pointer"}}><input type="checkbox" checked={savVis.includes(s.id)} onChange={e=>{if(e.target.checked)setSavVis(v=>[...v,s.id]);else setSavVis(v=>v.filter(x=>x!==s.id))}}/>{s.nm.substring(0,20)}</label>)}<button onClick={()=>setShowSavCfg(false)} style={{...sB(true),height:20,fontSize:18,marginTop:3,width:"100%"}}>OK</button></div>}</div>
       </div>
 
       {/* Plan by category - SIDE-BY-SIDE FIXED + VARIABLE */}
@@ -564,24 +611,32 @@ export default function App(){
     </div>}
 
     {/* ===== MESEČNI VNOS ===== */}
-    {vw==="entry"&&<div>
+    {vw==="entry"&&(()=>{
+      const now=new Date();const isCurMo2=mo===now.getMonth()&&yr===now.getFullYear();const dInMo=new Date(yr,mo+1,0).getDate();const dayFrac=isCurMo2?now.getDate()/dInMo:0;
+      const incomeBlock=<><div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}><div style={{fontSize:16,fontWeight:600,color:C.sb}}>Prihodki</div><button onClick={()=>setHideIncome(h=>!h)} style={{fontSize:13,padding:"2px 8px",borderRadius:4,border:`1px solid ${C.bd}`,background:hideIncome?"#fef3c7":"#f5f5f0",color:C.mt,cursor:"pointer"}}>{hideIncome?"Pokaži prihodke ▾":"Skrij prihodke ▴"}</button></div>
+      <div style={sC}>{["Kristina","Tadej"].map(person=><div key={person} style={{marginBottom:8}}><div style={{fontSize:18,fontWeight:600,color:C.bl,marginBottom:4}}>{person}</div><div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:6}}>{itList.map(t=><div key={`${person}-${t}`}><div style={{fontSize:18,color:"#999"}}>{t}</div><input style={{...sI,height:26,fontSize:17,width:"100%"}} defaultValue={md.income?.[person]?.[t]||""} onBlur={e=>uInc(person,t,e.target.value)} placeholder="0"/></div>)}</div></div>)}<div style={{borderTop:`1px solid ${C.bd}`,paddingTop:8}}><div style={{fontSize:17,fontWeight:600,color:C.sb,marginBottom:4}}>Dodatni prihodki</div>{(md.customIncome||[]).map((ci,i)=><div key={i} style={{fontSize:17,padding:"2px 0"}}>{ci.label} — {ci.person} — {fmt(ci.amount)}</div>)}<AddCI onAdd={addCI}/></div></div></>;
+      return<div>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8,flexWrap:"wrap",gap:6}}>
         <h2 style={{fontSize:24,fontWeight:700,margin:0}}>Mesečni vnos</h2>
         <div style={{display:"flex",gap:6,alignItems:"center"}}>{YPk}{MNav}<button onClick={()=>toggleClose(mo)} style={{...sB(isClosed),fontSize:16,background:isClosed?C.gn:undefined,color:isClosed?"#fff":undefined,border:isClosed?"none":undefined}}>{isClosed?"✓ Zaključen":"Zaključi mesec"}</button></div>
       </div>
       {isClosed&&<div style={{background:"#dcfce7",border:"1px solid #86efac",borderRadius:8,padding:"6px 12px",marginBottom:10,fontSize:17,color:"#166534"}}>Ta mesec je zaključen. Odpri ga z gumbom zgoraj za urejanje.</div>}
-      <div style={{fontSize:16,fontWeight:600,color:C.sb,marginBottom:8}}>Prihodki</div>
-      <div style={sC}>{["Kristina","Tadej"].map(person=><div key={person} style={{marginBottom:8}}><div style={{fontSize:18,fontWeight:600,color:C.bl,marginBottom:4}}>{person}</div><div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:6}}>{itList.map(t=><div key={`${person}-${t}`}><div style={{fontSize:18,color:"#999"}}>{t}</div><input style={{...sI,height:26,fontSize:17,width:"100%"}} defaultValue={md.income?.[person]?.[t]||""} onBlur={e=>uInc(person,t,e.target.value)} placeholder="0"/></div>)}</div></div>)}<div style={{borderTop:`1px solid ${C.bd}`,paddingTop:8}}><div style={{fontSize:17,fontWeight:600,color:C.sb,marginBottom:4}}>Dodatni prihodki</div>{(md.customIncome||[]).map((ci,i)=><div key={i} style={{fontSize:17,padding:"2px 0"}}>{ci.label} — {ci.person} — {fmt(ci.amount)}</div>)}<AddCI onAdd={addCI}/></div></div>
+      {!hideIncome&&incomeBlock}
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,alignItems:"start"}}>
-        <CatEntry cats={visibleCats.filter(c=>c.tp==="fixed")} title="Fiksni stroški" md={md} subVis={subVis} subRename={subRename} expandBreakdown={expandBreakdown} txnInput={txnInput} toggleSubVis={toggleSubVis} setExpandBreakdown={setExpandBreakdown} setTxnInput={setTxnInput} addTransaction={addTransaction} removeTransaction={removeTransaction} updateTransactionComment={updateTransactionComment} uSub={uSub}/>
-        <CatEntry cats={visibleCats.filter(c=>c.tp==="var"&&c.id!=="unexpected")} title="Variabilni stroški" md={md} subVis={subVis} subRename={subRename} expandBreakdown={expandBreakdown} txnInput={txnInput} toggleSubVis={toggleSubVis} setExpandBreakdown={setExpandBreakdown} setTxnInput={setTxnInput} addTransaction={addTransaction} removeTransaction={removeTransaction} updateTransactionComment={updateTransactionComment} uSub={uSub}/>
+        <CatEntry cats={visibleCats.filter(c=>c.tp==="fixed")} title="Fiksni stroški" md={md} subVis={subVis} subRename={subRename} expandBreakdown={expandBreakdown} txnInput={txnInput} toggleSubVis={toggleSubVis} setExpandBreakdown={setExpandBreakdown} setTxnInput={setTxnInput} addTransaction={addTransaction} removeTransaction={removeTransaction} updateTransactionComment={updateTransactionComment} uSub={uSub} subAlerts={subAlerts} dayFrac={dayFrac}/>
+        <CatEntry cats={visibleCats.filter(c=>c.tp==="var"&&c.id!=="unexpected")} title="Variabilni stroški" md={md} subVis={subVis} subRename={subRename} expandBreakdown={expandBreakdown} txnInput={txnInput} toggleSubVis={toggleSubVis} setExpandBreakdown={setExpandBreakdown} setTxnInput={setTxnInput} addTransaction={addTransaction} removeTransaction={removeTransaction} updateTransactionComment={updateTransactionComment} uSub={uSub} subAlerts={subAlerts} dayFrac={dayFrac}/>
       </div>
-      {AS.some(s=>subVis[s.id]===true)&&<div style={sC}><div style={{fontSize:18,fontWeight:600,color:C.tx,marginBottom:8}}>Skriti elementi 👁‍🗨</div>{AS.filter(s=>subVis[s.id]===true).map(sub=><div key={sub.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"6px 0",borderBottom:`1px solid ${C.fn}`,fontSize:17}}><span>{sub.nm}</span><button type="button" onClick={()=>toggleSubVis(sub.id)} style={{background:"none",border:"none",color:C.gn,cursor:"pointer",fontWeight:600}}>Pokaži</button></div>)}</div>}
+      {hideIncome&&incomeBlock}
+      {effectiveAS.some(s=>subVis[s.id]===true)&&<div style={sC}><div style={{fontSize:18,fontWeight:600,color:C.tx,marginBottom:8}}>Skriti elementi 👁‍🗨</div>{effectiveAS.filter(s=>subVis[s.id]===true).map(sub=><div key={sub.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"6px 0",borderBottom:`1px solid ${C.fn}`,fontSize:17}}><span>{sub.nm}</span><button type="button" onClick={()=>toggleSubVis(sub.id)} style={{background:"none",border:"none",color:C.gn,cursor:"pointer",fontWeight:600}}>Pokaži</button></div>)}</div>}
       <div style={{fontSize:16,fontWeight:600,color:C.sb,marginBottom:8}}>Nepredvideni stroški</div>
       <div style={sC}><AddUX onAdd={addUX} kuList={kuList}/>{(md.unexpectedItems||[]).map((it,i)=><div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",fontSize:17,padding:"6px 0",borderBottom:`1px solid ${C.fn}`}}><span>{it.desc} — {fmt(it.amount)} ({it.person})</span><button type="button" onClick={()=>setData(prev=>{const n=JSON.parse(JSON.stringify(prev));if(!n[yr])n[yr]=initY();if(!n[yr][mo])n[yr][mo]=initM();n[yr][mo].unexpectedItems=n[yr][mo].unexpectedItems.filter((_,j)=>j!==i);return n})} style={{background:"none",border:"none",color:C.rd,cursor:"pointer",fontSize:16}}>✕</button></div>)}</div>
+      <div style={{...sC,marginBottom:8}}>
+        <div style={{fontSize:15,fontWeight:600,color:C.sb,marginBottom:4}}>📝 Mesečna opomba — {MF[mo]} {yr}</div>
+        <textarea style={{width:"100%",minHeight:60,fontSize:15,border:`1px solid ${C.bd}`,borderRadius:4,padding:"6px 10px",fontFamily:"inherit",resize:"vertical",boxSizing:"border-box"}} defaultValue={md.note||""} onBlur={e=>uNote(e.target.value)} placeholder="Beležke, opomniki, posebnosti tega meseca…"/>
+      </div>
       <div style={{fontSize:16,fontWeight:600,color:C.sb,marginBottom:8}}>Hitro dodaj cilj</div>
       {showNG?<AddGoal onAdd={g=>{setGoals(p=>[...p,{id:Date.now(),...g}]);setShowNG(false)}} onCancel={()=>setShowNG(false)}/>:<button style={{...sB(false),fontSize:17}} onClick={()=>setShowNG(true)}>+ Nov cilj</button>}
-    </div>}
+    </div>;})()}
 
     {/* ===== LETNI PREGLED ===== */}
     {vw==="annual"&&<div>
@@ -590,9 +645,10 @@ export default function App(){
         <div style={{display:"flex",gap:6,alignItems:"center"}}>{YPk}<button onClick={()=>setCompMode(!compMode)} style={sB(compMode)}>{compMode?"Zapri primerjavo":"Primerjaj"}</button>{compMode&&<select style={{...sS,height:26,fontSize:17,width:70}} value={compYr||""} onChange={e=>setCompYr(e.target.value?parseInt(e.target.value):null)}><option value="">Izberi leto</option>{[2020,2021,2022,2023,2024,2025,2026,2027].filter(y=>y!==yr).map(y=><option key={y} value={y}>{y}</option>)}</select>}</div>
       </div>
       {/* Closed months indicator - clickable */}
-      <div style={{display:"flex",gap:4,marginBottom:10}}>{MS.map((m,i)=>{const mdata=yd[i]||initM();return<button key={i} onClick={()=>setAnnualDetailMonth(annualDetailMonth===i?null:i)} type="button" style={{flex:1,textAlign:"center",fontSize:18,padding:"3px 0",borderRadius:4,background:annualDetailMonth===i?"#93c5fd":mdata.closed?"#dcfce7":"#f5f5f0",color:annualDetailMonth===i?C.bl:mdata.closed?"#166534":"#999",border:"none",cursor:"pointer",fontWeight:mdata.closed||annualDetailMonth===i?600:400}}>{m}</button>})}</div>
+      <div style={{display:"flex",gap:4,marginBottom:10}}>{MS.map((m,i)=>{const mdata=yd[i]||initM();return<button key={i} onClick={()=>setAnnualDetailMonth(annualDetailMonth===i?null:i)} type="button" style={{flex:1,textAlign:"center",fontSize:18,padding:"3px 0",borderRadius:4,background:annualDetailMonth===i?"#93c5fd":mdata.closed?"#dcfce7":"#f5f5f0",color:annualDetailMonth===i?C.bl:mdata.closed?"#166534":"#999",border:"none",cursor:"pointer",fontWeight:mdata.closed||annualDetailMonth===i?600:400}}>{m}{mdata.note?"📝":""}</button>})}</div>
       {annualDetailMonth!==null&&<div style={{...sC,background:"#f0f7ff",border:`2px solid ${C.bl}`,marginBottom:8,padding:10}}>
-        <div style={{fontSize:18,fontWeight:700,color:C.tx,marginBottom:6}}>Mesečni pregled: {MF[annualDetailMonth]} — {((md)=>{const fxA=fxT(md,'actual');const vrA=vrT(md,'actual');const uxA=uxtT(md);return `F: ${fmt(fxA)} | V: ${fmt(vrA)}${uxA>0?` | N: ${fmt(uxA)}`:""}  =  ${fmt(fxA+vrA+uxA)}`})(yd[annualDetailMonth]||initM())}</div>
+        <div style={{fontSize:18,fontWeight:700,color:C.tx,marginBottom:6}}>Mesečni pregled: {MF[annualDetailMonth]} — {((md)=>{const fxA=efxT(md,'actual');const vrA=evrT(md,'actual');const uxA=uxtT(md);return `F: ${fmt(fxA)} | V: ${fmt(vrA)}${uxA>0?` | N: ${fmt(uxA)}`:""}  =  ${fmt(fxA+vrA+uxA)}`})(yd[annualDetailMonth]||initM())}</div>
+        {(yd[annualDetailMonth]||{}).note&&<div style={{background:"#fff",border:`1px solid ${C.bd}`,borderRadius:6,padding:"6px 10px",fontSize:14,color:"#555",marginBottom:6,fontStyle:"italic"}}>📝 {(yd[annualDetailMonth]||{}).note}</div>}
         <div style={{display:"grid",gridTemplateColumns:"1fr 80px 80px 75px 50px",gap:5,fontSize:18,color:C.mt,fontWeight:600,padding:"0 0 3px",borderBottom:`1px solid ${C.bd}`}}>
           <span>Postavka</span><span>Plan</span><span>Izvedba</span><span>Razl.</span><span>%</span>
         </div>
@@ -605,7 +661,7 @@ export default function App(){
       <div style={{fontSize:16,fontWeight:700,color:C.tx,marginBottom:3,marginTop:4}}>Nepredvideni stroški</div>
       <div style={{...sC,overflowX:"auto",padding:8}}><table style={{width:"100%",fontSize:14,borderCollapse:"collapse"}}><thead><tr style={{color:C.mt,borderBottom:`2px solid ${C.bd}`}}><th style={{textAlign:"left",padding:"6px 10px",fontSize:14}}>Nepredvideni</th>{MS.map(m=><th key={m} style={{textAlign:"right",padding:"6px 6px",cursor:"pointer",fontWeight:600,fontSize:14,minWidth:"68px"}} onClick={()=>{setMo(MS.indexOf(m));setVw("entry")}}>{m}</th>)}<th style={{textAlign:"right",padding:"2px 4px",fontWeight:700,fontSize:14}}>Σ</th></tr></thead><tbody><tr style={{borderTop:`1px solid ${C.fn}`}}><td style={{padding:"6px 8px",fontWeight:600,fontSize:14}}>Stroški</td>{Array.from({length:12},(_,i)=>{const mdata=yd[i]||initM();const v=uxtT(mdata);return<td key={i} style={{textAlign:"right",padding:"4px 6px",color:v>0?C.rd:"#ddd",fontSize:14,minWidth:"68px",fontWeight:v>0?600:400}}>{v>0?fmt(v):"—"}</td>})}<td style={{textAlign:"right",padding:"4px 8px",fontWeight:700,fontSize:14}}>{(() => {let t=0; for(let i=0;i<12;i++)t+=uxtT(yd[i]||initM()); return t>0?fmt(t):"—"})()}</td></tr></tbody></table></div>
 
-      {compMode&&compYr&&<div style={{...sC,background:"#fefce8",border:"1px solid #fde68a",marginTop:4}}><div style={{fontSize:18,fontWeight:600,marginBottom:3}}>Primerjava {yr} vs {compYr}</div><table style={{width:"100%",fontSize:18,borderCollapse:"collapse"}}><thead><tr style={{color:C.mt,borderBottom:`1px solid #fde68a`}}><th style={{textAlign:"left",padding:"2px 4px",minWidth:"140px",fontSize:11}}>Kategorija</th><th style={{textAlign:"right",padding:"2px 4px",fontSize:11}}>{yr}</th><th style={{textAlign:"right",padding:"2px 4px",fontSize:11}}>{compYr}</th><th style={{textAlign:"right",padding:"2px 4px",fontSize:11}}>±</th></tr></thead><tbody>{CATS.map(cat=>{let t1=0,t2=0;for(let m=0;m<12;m++){t1+=cT(yd[m]||initM(),cat,'actual');t2+=cT((data[compYr]||initY())[m]||initM(),cat,'actual')}const diff=t1-t2;return<tr key={cat.id} style={{borderTop:`1px solid #f5e6d3`}}><td style={{padding:"1px 4px",fontSize:18}}>{cat.nm}</td><td style={{textAlign:"right",padding:"1px 4px",fontSize:18}}>{fmt(t1)}</td><td style={{textAlign:"right",padding:"1px 4px",color:C.mt,fontSize:18}}>{fmt(t2)}</td><td style={{textAlign:"right",padding:"1px 4px",fontWeight:600,fontSize:18,color:diff>0?C.rd:diff<0?C.gn:C.mt}}>{diff>0?"+":""}{fmt(diff)}</td></tr>})}</tbody></table></div>}
+      {compMode&&compYr&&<div style={{...sC,background:"#fefce8",border:"1px solid #fde68a",marginTop:4}}><div style={{fontSize:18,fontWeight:600,marginBottom:3}}>Primerjava {yr} vs {compYr}</div><table style={{width:"100%",fontSize:18,borderCollapse:"collapse"}}><thead><tr style={{color:C.mt,borderBottom:`1px solid #fde68a`}}><th style={{textAlign:"left",padding:"2px 4px",minWidth:"140px",fontSize:11}}>Kategorija</th><th style={{textAlign:"right",padding:"2px 4px",fontSize:11}}>{yr}</th><th style={{textAlign:"right",padding:"2px 4px",fontSize:11}}>{compYr}</th><th style={{textAlign:"right",padding:"2px 4px",fontSize:11}}>±</th></tr></thead><tbody>{effectiveCats.map(cat=>{let t1=0,t2=0;for(let m=0;m<12;m++){t1+=cT(yd[m]||initM(),cat,'actual');t2+=cT((data[compYr]||initY())[m]||initM(),cat,'actual')}const diff=t1-t2;return<tr key={cat.id} style={{borderTop:`1px solid #f5e6d3`}}><td style={{padding:"1px 4px",fontSize:18}}>{cat.nm}</td><td style={{textAlign:"right",padding:"1px 4px",fontSize:18}}>{fmt(t1)}</td><td style={{textAlign:"right",padding:"1px 4px",color:C.mt,fontSize:18}}>{fmt(t2)}</td><td style={{textAlign:"right",padding:"1px 4px",fontWeight:600,fontSize:18,color:diff>0?C.rd:diff<0?C.gn:C.mt}}>{diff>0?"+":""}{fmt(diff)}</td></tr>})}</tbody></table></div>}
 
       <div style={sC}><ResponsiveContainer width="100%" height={160}><LineChart data={trendData}><XAxis dataKey="name" tick={{fontSize:16}} axisLine={false}/><YAxis tick={{fontSize:16}} axisLine={false}/><Tooltip formatter={v=>fmt(v)} contentStyle={{fontSize:17}}/><Legend wrapperStyle={{fontSize:16}}/><Line type="monotone" dataKey="Prihodki" stroke={C.gn} strokeWidth={2} dot={{r:3}}/><Line type="monotone" dataKey="Odhodki" stroke={C.rd} strokeWidth={2} dot={{r:3}}/></LineChart></ResponsiveContainer></div>
     </div>}
@@ -618,7 +674,7 @@ export default function App(){
       </div>
       {goalView==="monthly"&&<div style={{marginBottom:10}}><span style={{fontSize:17,color:C.mt}}>Mesec: </span><select style={{...sS,height:26,fontSize:17,width:120}} value={goalMonth} onChange={e=>setGoalMonth(parseInt(e.target.value))}>{MF.map((m,i)=><option key={i} value={i}>{m}</option>)}</select></div>}
       {showNG&&<AddGoal onAdd={g=>{setGoals(p=>[...p,{id:Date.now(),...g}]);setShowNG(false)}} onCancel={()=>setShowNG(false)}/>}
-      {goals.filter(g=>goalView==="general"?(g.scope!=="monthly"):(g.scope==="monthly"&&g.month===goalMonth)).map(g=>{const getAutoPullValue=()=>{if(!g.autoPull||!g.source)return g.current||0;let total=0;const sub=AS.find(s=>s.id===g.source);if(!sub)return g.current||0;if(g.pullFromMonth==="all"){for(let i=0;i<12;i++){const md2=yd[i]||initM();if(md2.closed)total+=md2.subs?.[g.source]?.actual||0}}else if(g.pullFromMonth==="current"){total=md.subs?.[g.source]?.actual||0}else{const mi=parseInt(g.pullFromMonth);const md2=yd[mi]||initM();total=md2.subs?.[g.source]?.actual||0}return total};const currentVal=getAutoPullValue();const p=g.target>0?pc(currentVal,g.target):0;return<div key={g.id} style={sC}>
+      {goals.filter(g=>goalView==="general"?(g.scope!=="monthly"):(g.scope==="monthly"&&g.month===goalMonth)).map(g=>{const getAutoPullValue=()=>{if(!g.autoPull||!g.source)return g.current||0;let total=0;const sub=effectiveAS.find(s=>s.id===g.source);if(!sub)return g.current||0;if(g.pullFromMonth==="all"){for(let i=0;i<12;i++){const md2=yd[i]||initM();if(md2.closed)total+=md2.subs?.[g.source]?.actual||0}}else if(g.pullFromMonth==="current"){total=md.subs?.[g.source]?.actual||0}else{const mi=parseInt(g.pullFromMonth);const md2=yd[mi]||initM();total=md2.subs?.[g.source]?.actual||0}return total};const currentVal=getAutoPullValue();const p=g.target>0?pc(currentVal,g.target):0;return<div key={g.id} style={sC}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
           <span style={{fontSize:16,fontWeight:700}}>{g.name}</span>
           <div style={{display:"flex",gap:4,alignItems:"center"}}><span style={sT(g.type==="saving"?"#dbeafe":"#fef3c7",g.type==="saving"?C.bl:"#92400e")}>{g.type}</span>{g.month!=null&&<span style={sT("#f0f7ff",C.bl)}>{MF[g.month]}</span>}{g.autoPull&&<span style={sT("#dcfce7","#166534")}>🔗</span>}<button onClick={()=>setGoals(prev=>prev.filter(x=>x.id!==g.id))} style={{fontSize:16,color:C.rd,background:"none",border:"none",cursor:"pointer"}}>✕</button></div>
@@ -627,10 +683,11 @@ export default function App(){
           <span style={{fontSize:16,color:C.mt}}>Trenutno:</span>
           {g.autoPull?<span style={{fontSize:16,fontWeight:600,width:90,color:C.bl}}>{fmt(currentVal)}</span>:<input style={{...sI,width:90,height:30,fontSize:16,fontWeight:600}} defaultValue={g.current||0} onBlur={e=>setGoals(prev=>prev.map(x=>x.id===g.id?{...x,current:parseFloat(e.target.value)||0}:x))}/>}
           <span style={{fontSize:16,fontWeight:700}}>/ {fmt(g.target)}</span>
-          {g.source&&<span style={{fontSize:16,color:C.bl}}>← {AS.find(s=>s.id===g.source)?.nm||g.source}</span>}
+          {g.source&&<span style={{fontSize:16,color:C.bl}}>← {effectiveAS.find(s=>s.id===g.source)?.nm||g.source}</span>}
         </div>
         <div style={{height:6,borderRadius:3,background:"#eee",overflow:"hidden"}}><div style={{height:"100%",width:`${Math.min(p,100)}%`,borderRadius:3,background:p>90&&g.type==="limit"?C.rd:C.bl}}/></div>
         <div style={{fontSize:17,color:C.mt,marginTop:4}}>{p}% {g.note&&`— ${g.note}`}</div>
+        {g.targetDate&&(()=>{const td=new Date(g.targetDate+"-01");const now=new Date();const moLeft=Math.max(1,(td.getFullYear()-now.getFullYear())*12+(td.getMonth()-now.getMonth()));const remaining=g.target-currentVal;const reqMo=remaining>0?Math.ceil(remaining/moLeft):0;const onTrack=reqMo<=0;return<div style={{marginTop:4,padding:"4px 8px",borderRadius:4,background:onTrack?"#dcfce7":"#fef3c7",fontSize:14,color:onTrack?"#166534":"#92400e",fontWeight:600}}>🎯 Do {g.targetDate}: {moLeft} mes. ostane {onTrack?"✓ cilj dosežen":` → potrebuješ ${fmt(reqMo)}/mesec`}</div>})()}
       </div>})}
       {goals.filter(g=>goalView==="general"?(g.scope!=="monthly"):(g.scope==="monthly"&&g.month===goalMonth)).length===0&&<div style={{fontSize:18,color:C.mt,textAlign:"center",padding:20}}>Ni ciljev za ta pogled. Dodaj novega z gumbom zgoraj.</div>}
     </div>}
@@ -794,18 +851,131 @@ export default function App(){
       </div>
     </div>}
 
-    {/* ===== % RAZDELITEV ===== */}
+    {/* ===== PLAN ===== */}
     {vw==="pct"&&(()=>{
-      const colTarget=(sub,base)=>{const m=pMd[sub.id]||"fixed";return m==="pct"?Math.round(base*(bPct[sub.id]||0)/100):(pFx[sub.id]||0)};
-      const sumOfType=(tp,base)=>CATS.filter(c=>c.tp===tp).flatMap(c=>c.subs).filter(s=>subVis[s.id]!==true).reduce((s,sub)=>s+colTarget(sub,base),0);
-      const fxSum=sumOfType("fixed",manualBudget);
-      const vrSum=sumOfType("var",manualBudget);
-      const nepTarget=nepMd==="pct"?Math.round(manualBudget*nepPct/100):nepFx;
+      const colTarget=(sub,base)=>{const m=AP.pMd[sub.id]||"fixed";return m==="pct"?Math.round(base*(AP.bPct[sub.id]||0)/100):(AP.pFx[sub.id]||0)};
+      const sumOfType=(tp,base)=>effectiveCats.filter(c=>c.tp===tp).flatMap(c=>c.subs).filter(s=>subVis[s.id]!==true).reduce((s,sub)=>s+colTarget(sub,base),0);
+      const fxSum=sumOfType("fixed",AP.budget);
+      const vrSum=sumOfType("var",AP.budget);
+      const nepTarget=AP.nepMd==="pct"?Math.round(AP.budget*AP.nepPct/100):AP.nepFx;
       const totalPlan=fxSum+vrSum+nepTarget;
-      const totalPct=manualBudget>0?Math.round(totalPlan/manualBudget*100):0;
-      const sFxSum=sumOfType("fixed",scratchBudget);const sVrSum=sumOfType("var",scratchBudget);const sNep=nepMd==="pct"?Math.round(scratchBudget*nepPct/100):nepFx;const sTotal=sFxSum+sVrSum+sNep;
+      const totalPct=AP.budget>0?Math.round(totalPlan/AP.budget*100):0;
+      const sFxSum=sumOfType("fixed",scratchBudget);const sVrSum=sumOfType("var",scratchBudget);const sNep=AP.nepMd==="pct"?Math.round(scratchBudget*AP.nepPct/100):AP.nepFx;const sTotal=sFxSum+sVrSum+sNep;
       return<div>
-      <h2 style={{fontSize:24,fontWeight:700,margin:"0 0 8px"}}>% razdelitev</h2>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8,flexWrap:"wrap",gap:6}}>
+        <h2 style={{fontSize:24,fontWeight:700,margin:0}}>{tabNames.pct||"Plan"}</h2>
+        <button style={{...sB(planManageMode),fontSize:15,height:34,padding:"0 14px"}} onClick={()=>{setPlanManageMode(!planManageMode);setAddSubCat(null);setAddSubNm('')}}>{planManageMode?"✓ Zaključi urejanje":"⚙ Uredi postavke"}</button>
+      </div>
+
+      {/* Profile selector */}
+      <div style={{...sC,background:"#f0f7ff",border:"1px solid #bfdbfe"}}>
+        <div style={{fontSize:16,fontWeight:600,color:C.bl,marginBottom:8}}>Profili proračuna</div>
+        <div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap",marginBottom:6}}>
+          <select style={{...sS,height:34,fontSize:15,flex:1,minWidth:140}} value={activeProfId} onChange={e=>setActiveProfId(e.target.value)}>
+            {budgetProfiles.map(p=><option key={p.id} value={p.id}>{p.name}{p.isDefault?" ✓":""}</option>)}
+          </select>
+          {!AP.isDefault&&<button style={{...sB(true),background:C.gn,height:34,fontSize:14}} onClick={()=>setBudgetProfiles(ps=>ps.map(p=>({...p,isDefault:p.id===activeProfId})))}>Nastavi kot privzeti ✓</button>}
+          {!renamingProf&&<button style={{...sB(false),height:34,fontSize:14}} onClick={()=>{setRenamingProf(true);setRenameName(AP.name)}}>Preimenuj</button>}
+          {renamingProf&&<><input style={{...sI,height:34,fontSize:14,width:140}} value={renameName} onChange={e=>setRenameName(e.target.value)}/><button style={{...sB(true),height:34,fontSize:14}} onClick={()=>{updProf('name',renameName);setRenamingProf(false)}}>✓</button><button style={{...sB(false),height:34,fontSize:14}} onClick={()=>setRenamingProf(false)}>✕</button></>}
+          {budgetProfiles.length>1&&AP.id!=='moj_plan'&&<button style={{...sB(false),height:34,fontSize:14,color:C.rd,borderColor:C.rd}} onClick={()=>{if(confirm(`Izbriši profil "${AP.name}"?`)){const next=budgetProfiles.find(p=>p.id!==activeProfId);if(next){setActiveProfId(next.id);if(AP.isDefault)setBudgetProfiles(ps=>[...ps.filter(p=>p.id!==activeProfId).map((p,i)=>i===0?{...p,isDefault:true}:p)]);else setBudgetProfiles(ps=>ps.filter(p=>p.id!==activeProfId))}}}}>Izbriši</button>}
+          <button style={{...sB(false),height:34,fontSize:14}} onClick={()=>setShowNewProf(!showNewProf)}>+ Nov profil</button>
+        </div>
+        {showNewProf&&<div style={{display:"flex",gap:6,alignItems:"center",padding:"6px 0",borderTop:`1px solid #bfdbfe`,flexWrap:"wrap"}}>
+          <span style={{fontSize:14,color:C.mt}}>Ime:</span>
+          <input style={{...sI,height:30,fontSize:14,flex:1,minWidth:100}} value={newProfName} onChange={e=>setNewProfName(e.target.value)} placeholder="npr. Varčevalni plan"/>
+          <span style={{fontSize:13,color:C.mt}}>Kopiraj iz:</span>
+          <select style={{...sS,height:30,fontSize:13}} id="profCopyFrom">{budgetProfiles.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}{PROF_TEMPLATES.map(t=><option key={t.id+'_tpl'} value={t.id+'_tpl'}>{t.name} (privzeto)</option>)}</select>
+          <button style={{...sB(true),height:30,fontSize:14}} onClick={()=>{if(!newProfName.trim())return;const src=document.getElementById('profCopyFrom').value;const base=src.endsWith('_tpl')?PROF_TEMPLATES.find(t=>t.id===src.replace('_tpl','')):budgetProfiles.find(p=>p.id===src);if(!base)return;const np={...base,id:'prof_'+Date.now(),name:newProfName.trim(),isDefault:false};setBudgetProfiles(ps=>[...ps,np]);setActiveProfId(np.id);setNewProfName('');setShowNewProf(false)}}>Ustvari</button>
+          <button style={{...sB(false),height:30,fontSize:14}} onClick={()=>setShowNewProf(false)}>✕</button>
+        </div>}
+        <div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap",paddingTop:6,borderTop:`1px solid #bfdbfe`,marginTop:2}}>
+          <span style={{fontSize:14,color:C.mt}}>Privzet (za sync):</span>
+          <span style={{fontSize:14,fontWeight:600,color:C.bl}}>{defProf?.name||"—"}</span>
+          {PROF_TEMPLATES.map(t=><button key={t.id} style={{...sB(false),height:26,fontSize:12,color:"#7c3aed",borderColor:"#7c3aed"}} onClick={()=>{if(confirm(`Ponastavi "${AP.name}" na vrednosti predloge "${t.name}"?`)){setBudgetProfiles(ps=>ps.map(p=>p.id===activeProfId?{...p,budget:t.budget,bPct:t.bPct,pMd:t.pMd,pFx:{...t.pFx},nepPct:t.nepPct,nepMd:t.nepMd,nepFx:t.nepFx}:p))}}}>↺ {t.name}</button>)}
+        </div>
+        {!AP.isDefault&&<div style={{marginTop:6,fontSize:13,color:"#b45309",background:"#fefce8",border:"1px solid #fde68a",borderRadius:4,padding:"4px 8px"}}>⚠ Urejate profil <strong>{AP.name}</strong>. Sync bo iz privzetega <strong>{defProf?.name}</strong>.</div>}
+      </div>
+
+      {/* ===== MANAGEMENT PANEL ===== */}
+      {planManageMode&&<div style={{...sC,background:"#f8f8ff",border:"1px solid #c7d2fe",marginBottom:10}}>
+        <div style={{fontSize:15,fontWeight:700,color:"#4338ca",marginBottom:8,display:"flex",alignItems:"center",gap:6}}>⚙ Upravljanje postavk <span style={{fontSize:13,color:C.mt,fontWeight:400}}>— spremembe so takoj vidne v vseh zavihkih</span></div>
+
+        {/* Bulk adjust */}
+        <div style={{...sC,background:"#f0fdf4",border:"1px solid #bbf7d0",marginBottom:8,padding:"8px 10px"}}>
+          <div style={{fontSize:13,fontWeight:600,color:"#166534",marginBottom:5}}>📐 Množično prilagodi plan</div>
+          <div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap"}}>
+            <select style={{...sS,height:28,fontSize:13,width:120}} value={bulkAdjType} onChange={e=>setBulkAdjType(e.target.value)}><option value="all">Vse</option><option value="fixed">Samo fiksni</option><option value="var">Samo variabilni</option></select>
+            <span style={{fontSize:13}}>×</span>
+            <input type="number" style={{...sI,width:65,height:28,fontSize:13,textAlign:"right"}} value={bulkAdjPct||""} onChange={e=>setBulkAdjPct(parseFloat(e.target.value)||0)} placeholder="+5"/>
+            <span style={{fontSize:13}}>%</span>
+            <button style={{...sB(true),height:28,fontSize:13,padding:"0 10px",background:C.gn}} type="button" onClick={()=>{if(!bulkAdjPct)return;const factor=1+bulkAdjPct/100;const newFx={...AP.pFx};const newPct={...AP.bPct};effectiveAS.filter(sub=>{const cat=effectiveCats.find(c=>c.subs.some(s=>s.id===sub.id));return cat&&(bulkAdjType==="all"||(bulkAdjType==="fixed"&&cat.tp==="fixed")||(bulkAdjType==="var"&&cat.tp==="var"))}).forEach(sub=>{const mode=AP.pMd[sub.id]||"fixed";if(mode==="fixed"){const cur=newFx[sub.id]||0;if(cur>0)newFx[sub.id]=Math.round(cur*factor)}else{const cur=newPct[sub.id]||0;if(cur>0)newPct[sub.id]=Math.round(cur*factor*10)/10}});updProf('pFx',newFx);updProf('bPct',newPct);setBulkAdjPct(0)}}>Uporabi</button>
+            <span style={{fontSize:12,color:C.mt}}>Prilagodi fiksne € ali % vrednosti za vse vidne postavke</span>
+          </div>
+        </div>
+
+        {/* Copy from last year + Plan history */}
+        <div style={{display:"flex",gap:6,marginBottom:8,flexWrap:"wrap"}}>
+          <button style={{...sB(false),fontSize:13,height:28,padding:"0 10px"}} type="button" onClick={copyPlanFromLastYear}>📋 Prenesi plan iz {yr-1}</button>
+          <button style={{...sB(showPlanHistory),fontSize:13,height:28,padding:"0 10px"}} type="button" onClick={()=>setShowPlanHistory(!showPlanHistory)}>📜 {showPlanHistory?"Skrij":"Pokaži"} zgodovino sprememb ({cLog.length})</button>
+        </div>
+        {showPlanHistory&&<div style={{...sC,marginBottom:8,maxHeight:200,overflowY:"auto",padding:6}}>
+          <div style={{fontSize:13,fontWeight:600,color:C.sb,marginBottom:4}}>Zadnje spremembe plana</div>
+          {cLog.slice(0,50).map((l,i)=>{const sub=effectiveAS.find(s=>s.id===l.sub);return<div key={i} style={{fontSize:12,padding:"2px 4px",borderBottom:`1px solid ${C.fn}`,color:"#555"}}>{l.date} — <strong>{sub?.nm||l.sub}</strong>: {fmt(l.oldVal)} → <span style={{color:l.newVal>l.oldVal?C.rd:C.gn,fontWeight:600}}>{fmt(l.newVal)}</span> <span style={{color:C.mt}}>({l.who})</span></div>})}
+          {cLog.length===0&&<div style={{fontSize:12,color:C.mt,textAlign:"center",padding:8}}>Ni sprememb.</div>}
+        </div>}
+
+        {/* Per-category sub management */}
+        {[{tp:"fixed",label:"Fiksni stroški"},{tp:"var",label:"Variabilni stroški"}].map(type=><div key={type.tp} style={{marginBottom:14}}>
+          <div style={{fontSize:14,fontWeight:700,color:C.sb,padding:"4px 0 6px",borderBottom:`2px solid ${C.bd}`,marginBottom:6,textTransform:"uppercase",letterSpacing:0.5}}>{type.label}</div>
+          {effectiveCats.filter(c=>c.tp===type.tp).map(cat=>{
+            const isAddOpen=addSubCat===cat.id;
+            const visibleCount=cat.subs.filter(s=>subVis[s.id]!==true).length;
+            const isCustomCatGroup=!CATS.find(c=>c.id===cat.id);
+            return<div key={cat.id} style={{marginBottom:8}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"3px 0 4px",borderBottom:`1px solid ${C.fn}`}}>
+                <span style={{fontSize:14,fontWeight:600,color:C.tx}}>{cat.nm} <span style={{fontSize:12,color:C.mt}}>({visibleCount}/{cat.subs.length})</span>{isCustomCatGroup&&<span style={{...sT("#e0e7ff","#4338ca"),fontSize:11,marginLeft:4,padding:"1px 4px"}}>nova skupina</span>}</span>
+                <div style={{display:"flex",gap:4}}>
+                  {isCustomCatGroup&&<button style={{background:"none",border:"none",cursor:"pointer",fontSize:13,color:C.rd,padding:"0 4px"}} title="Izbriši skupino" type="button" onClick={()=>{if(window.confirm(`Izbriši skupino "${cat.nm}"?`))setCustomCatGroups(p=>p.filter(c=>c.id!==cat.id))}}>🗑 skupino</button>}
+                  <button style={{...sB(isAddOpen),height:22,fontSize:13,padding:"0 8px"}} onClick={()=>{setAddSubCat(isAddOpen?null:cat.id);setAddSubNm('')}}>+ Dodaj</button>
+                </div>
+              </div>
+              {cat.subs.map((sub,si)=>{
+                const hidden=subVis[sub.id]===true;
+                const isCustom=isCustomCatGroup||(customSubs[cat.id]||[]).some(s=>s.id===sub.id);
+                const displayNm=subRename[sub.id]||sub.nm;
+                const alertV=subAlerts[sub.id]||"";
+                return<div key={sub.id} style={{display:"flex",alignItems:"center",gap:4,padding:"2px 0 2px 4px",borderBottom:`1px solid #f5f5f5`,opacity:hidden?0.45:1}}>
+                  <div style={{display:"flex",flexDirection:"column",gap:0}}>
+                    <button type="button" onClick={()=>moveSubUp(cat.id,sub.id)} style={{background:"none",border:"none",cursor:"pointer",fontSize:10,padding:"0 2px",color:si===0?"#ddd":C.mt,lineHeight:1}} disabled={si===0}>▲</button>
+                    <button type="button" onClick={()=>moveSubDown(cat.id,sub.id)} style={{background:"none",border:"none",cursor:"pointer",fontSize:10,padding:"0 2px",color:si===cat.subs.length-1?"#ddd":C.mt,lineHeight:1}} disabled={si===cat.subs.length-1}>▼</button>
+                  </div>
+                  <span style={{flex:1,fontSize:13,color:hidden?"#aaa":C.tx,textDecoration:hidden?"line-through":"none"}}>{displayNm}{isCustom&&<span style={{...sT("#e0e7ff","#4338ca"),fontSize:11,marginLeft:4,padding:"1px 4px"}}>novo</span>}</span>
+                  <span title="Opozorilo pri % plana (prazno = brez)"><input type="number" min={0} max={200} value={alertV} onChange={e=>setSubAlerts(p=>({...p,[sub.id]:parseInt(e.target.value)||0}))} style={{...sI,width:44,height:22,fontSize:11,textAlign:"right",padding:"0 4px"}} placeholder="⚡%"/></span>
+                  <button title={hidden?"Pokaži":"Začasno skrij"} onClick={()=>toggleSubVis(sub.id)} style={{background:"none",border:"none",cursor:"pointer",fontSize:14,padding:"0 2px",color:hidden?C.mt:C.bl}} type="button">{hidden?"🙈":"👁"}</button>
+                  <button title="Preimenuj" onClick={()=>{const nm=prompt("Novo ime:",displayNm);if(nm&&nm.trim())setSubRename(p=>({...p,[sub.id]:nm.trim()}))}} style={{background:"none",border:"none",cursor:"pointer",fontSize:12,padding:"0 2px",color:C.bl}} type="button">✎</button>
+                  <button title={isCustom?"Izbriši":"Trajno skrij"} onClick={()=>{if(isCustom){if(!window.confirm(`Izbriši "${displayNm}"?`))return;if(isCustomCatGroup){setCustomCatGroups(p=>p.map(c=>c.id===cat.id?{...c,subs:c.subs.filter(s=>s.id!==sub.id)}:c))}else{setCustomSubs(p=>{const n={...p};n[cat.id]=(n[cat.id]||[]).filter(s=>s.id!==sub.id);return n})}}else{if(!window.confirm(`Trajno skrij "${displayNm}"?`))return;setSubVis(p=>({...p,[sub.id]:true}))}}} style={{background:"none",border:"none",cursor:"pointer",fontSize:12,padding:"0 2px",color:C.rd}} type="button">🗑</button>
+                </div>
+              })}
+              {isAddOpen&&<div style={{display:"flex",gap:5,marginTop:4,padding:"5px 6px",background:"#f0f7ff",borderRadius:4,alignItems:"center"}}>
+                <input style={{...sI,flex:1,height:26,fontSize:13}} value={addSubNm} onChange={e=>setAddSubNm(e.target.value)} onKeyDown={e=>{if(e.key==="Enter"){const nm=addSubNm.trim();if(!nm)return;const id="custom_"+cat.id+"_"+Date.now();if(isCustomCatGroup){setCustomCatGroups(p=>p.map(c=>c.id===cat.id?{...c,subs:[...c.subs,{id,nm,dp:0}]}:c))}else{setCustomSubs(p=>{const n={...p};n[cat.id]=[...(n[cat.id]||[]),{id,nm,dp:0}];return n})};setAddSubNm('');setAddSubCat(null)}}} placeholder="Ime nove postavke" autoFocus/>
+                <button style={{...sB(true),height:26,fontSize:13,padding:"0 8px"}} type="button" onClick={()=>{const nm=addSubNm.trim();if(!nm)return;const id="custom_"+cat.id+"_"+Date.now();if(isCustomCatGroup){setCustomCatGroups(p=>p.map(c=>c.id===cat.id?{...c,subs:[...c.subs,{id,nm,dp:0}]}:c))}else{setCustomSubs(p=>{const n={...p};n[cat.id]=[...(n[cat.id]||[]),{id,nm,dp:0}];return n})};setAddSubNm('');setAddSubCat(null)}}>Dodaj</button>
+                <button style={{...sB(false),height:26,fontSize:13,padding:"0 6px"}} type="button" onClick={()=>{setAddSubCat(null);setAddSubNm('')}}>×</button>
+              </div>}
+            </div>
+          })}
+
+          {/* Add new category group */}
+          {addCatGrpForm&&addCatGrpForm.tp===type.tp?<div style={{display:"flex",gap:5,padding:"6px 8px",background:"#f0fdf4",borderRadius:4,alignItems:"center",marginTop:4}}>
+            <input style={{...sI,flex:1,height:26,fontSize:13}} value={addCatGrpForm.nm} onChange={e=>setAddCatGrpForm(p=>({...p,nm:e.target.value}))} placeholder="Ime nove kategorije" autoFocus/>
+            <button style={{...sB(true),height:26,fontSize:13,padding:"0 8px",background:C.gn}} type="button" onClick={()=>{const nm=addCatGrpForm.nm.trim();if(!nm)return;const id="cgrp_"+Date.now();setCustomCatGroups(p=>[...p,{id,nm,tp:type.tp,subs:[]}]);setAddCatGrpForm(null)}}>Ustvari skupino</button>
+            <button style={{...sB(false),height:26,fontSize:13,padding:"0 6px"}} type="button" onClick={()=>setAddCatGrpForm(null)}>×</button>
+          </div>:<button style={{...sB(false),height:22,fontSize:12,padding:"0 8px",marginTop:4}} type="button" onClick={()=>setAddCatGrpForm({nm:"",tp:type.tp})}>+ Nova kategorija pod {type.label}</button>}
+        </div>)}
+
+        <div style={{marginTop:4,padding:"6px 10px",background:"#eef2ff",borderRadius:6,fontSize:12,color:"#4338ca",display:"flex",alignItems:"center",gap:6}}>
+          💡 <span><strong>↑↓</strong> = preurejanje &nbsp;|&nbsp; <strong>⚡%</strong> = opozorilo pri % plana &nbsp;|&nbsp; <strong>👁</strong> = skrij/pokaži &nbsp;|&nbsp; <strong>✎</strong> = preimenuj &nbsp;|&nbsp; <strong>🗑</strong> = izbriši/skrij trajno</span>
+        </div>
+      </div>}
 
       {/* Scratch / Eksperiment */}
       <div style={{...sC,background:"#fefce8",border:"1px solid #fde68a"}}>
@@ -825,12 +995,24 @@ export default function App(){
       </div>
 
       {/* Active budget */}
+      {/* Scratch experiment */}
+      <div style={{...sC,background:"#fefce8",border:"1px solid #fde68a"}}>
+        <div style={{fontSize:15,fontWeight:600,color:"#92400e",marginBottom:6}}>🧪 Eksperimentalni izračun (ne vpliva na sync)</div>
+        <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
+          <span style={{fontSize:16,color:C.mt}}>Hipotetičen proračun:</span>
+          <input type="number" style={{...sI,width:120,height:32}} value={scratchBudget||""} onChange={e=>setScratchBudget(parseInt(e.target.value)||0)} placeholder="npr. 4000"/>
+          <span>€</span>
+          {scratchBudget>0&&<button style={{...sB(false),fontSize:14,height:28}} onClick={()=>{updProf('budget',scratchBudget);setScratchBudget(0)}}>Uporabi kot aktivni →</button>}
+        </div>
+        {scratchBudget>0&&<div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8,fontSize:14,marginTop:6}}><div><div style={{color:C.mt}}>Fiksni</div><div style={{fontWeight:700,color:C.bl}}>{fmt(sFxSum)} ({scratchBudget>0?pc(sFxSum,scratchBudget):0}%)</div></div><div><div style={{color:C.mt}}>Variabilni</div><div style={{fontWeight:700,color:C.bl}}>{fmt(sVrSum)} ({scratchBudget>0?pc(sVrSum,scratchBudget):0}%)</div></div><div><div style={{color:C.mt}}>Nepredvideni</div><div style={{fontWeight:700,color:C.or}}>{fmt(sNep)} ({scratchBudget>0?pc(sNep,scratchBudget):0}%)</div></div><div><div style={{color:C.mt}}>Skupaj</div><div style={{fontWeight:700,color:sTotal<=scratchBudget?C.gn:C.rd}}>{fmt(sTotal)} ({scratchBudget>0?pc(sTotal,scratchBudget):0}%)</div></div></div>}
+      </div>
+
       <div style={{...sC,background:"#f0fdf4",border:"1px solid #bbf7d0"}}>
         <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
           <span style={{fontSize:18,fontWeight:600,color:"#166534"}}>✓ Aktivni proračun:</span>
-          <input type="number" style={{...sI,width:120,height:34,fontSize:18,fontWeight:700}} value={manualBudget} onChange={e=>setManualBudget(parseInt(e.target.value)||0)}/><span style={{fontSize:16,fontWeight:600}}>€</span>
-          <button onClick={syncPctToPlan} style={{...sB(true),background:C.gn,fontSize:17}}>Sinhroniziraj → mesečni vnos</button>
-          <span style={{marginLeft:"auto",fontSize:15,color:C.mt}}>Plan skupaj: <strong style={{color:totalPlan<=manualBudget?C.gn:C.rd}}>{fmt(totalPlan)}</strong> ({totalPct}%)</span>
+          <input type="number" style={{...sI,width:120,height:34,fontSize:18,fontWeight:700}} value={AP.budget} onChange={e=>updProf('budget',parseInt(e.target.value)||0)}/><span style={{fontSize:16,fontWeight:600}}>€</span>
+          <button onClick={()=>syncPctToPlan()} style={{...sB(true),background:C.gn,fontSize:17}}>Sinhroniziraj → mesečni vnos</button>
+          <span style={{marginLeft:"auto",fontSize:15,color:C.mt}}>Plan skupaj: <strong style={{color:totalPlan<=AP.budget?C.gn:C.rd}}>{fmt(totalPlan)}</strong> ({totalPct}%)</span>
         </div>
       </div>
 
@@ -843,13 +1025,13 @@ export default function App(){
           <div style={{display:"grid",gridTemplateColumns:"1fr 45px 55px 25px 55px 25px 70px",gap:5,fontSize:13,color:C.mt,fontWeight:600,padding:"0 0 4px",borderBottom:"1px solid #eee",alignItems:"center"}}>
             <span>Postavka</span><span>Način</span><span>%</span><span></span><span>€</span><span></span><span style={{textAlign:"right"}}>Cilj</span>
           </div>
-          {CATS.filter(c=>c.tp===type.tp).map(cat=><div key={cat.id}><div style={{fontSize:15,fontWeight:600,color:C.tx,padding:"4px 0 2px",marginTop:3}}>{cat.nm}</div>{cat.subs.filter(sub=>subVis[sub.id]!==true).map(sub=>{const mode=pMd[sub.id]||"fixed";const pV=bPct[sub.id]||0;const fV=pFx[sub.id]||0;const base=manualBudget;const target=mode==="pct"?Math.round(base*pV/100):fV;const pctOfBudget=base>0?pc(target,base):0;const euroFromPct=Math.round(base*pV/100);
+          {effectiveCats.filter(c=>c.tp===type.tp).map(cat=><div key={cat.id}><div style={{fontSize:15,fontWeight:600,color:C.tx,padding:"4px 0 2px",marginTop:3}}>{cat.nm}</div>{cat.subs.filter(sub=>subVis[sub.id]!==true).map(sub=>{const mode=AP.pMd[sub.id]||"fixed";const pV=AP.bPct[sub.id]||0;const fV=AP.pFx[sub.id]||0;const base=AP.budget;const target=mode==="pct"?Math.round(base*pV/100):fV;const pctOfBudget=base>0?pc(target,base):0;const euroFromPct=Math.round(base*pV/100);
           return<div key={sub.id} style={{display:"grid",gridTemplateColumns:"1fr 45px 55px 25px 55px 25px 70px",gap:5,padding:"4px 0",borderBottom:`1px solid ${C.fn}`,fontSize:13,alignItems:"center",paddingLeft:10}}>
             <span style={{fontSize:13,color:"#666"}}>{sub.nm}</span>
-            <select style={{...sS,width:42,height:24,fontSize:13}} value={mode} onChange={e=>setPMd(p=>({...p,[sub.id]:e.target.value}))}><option value="pct">%</option><option value="fixed">€</option></select>
-            <input type="number" min={0} max={100} value={mode==="pct"?pV:pctOfBudget} onChange={e=>{if(mode==="pct")setBPct(p=>({...p,[sub.id]:parseInt(e.target.value)||0}));else{const newPct=parseInt(e.target.value)||0;setPFx(p=>({...p,[sub.id]:Math.round(base*newPct/100)}))}}} style={{...sI,width:50,height:24,fontSize:14,textAlign:"right",fontWeight:600}}/>
+            <select style={{...sS,width:42,height:24,fontSize:13}} value={mode} onChange={e=>updProf('pMd',{...AP.pMd,[sub.id]:e.target.value})}><option value="pct">%</option><option value="fixed">€</option></select>
+            <input type="number" min={0} max={100} value={mode==="pct"?pV:pctOfBudget} onChange={e=>{if(mode==="pct")updProf('bPct',{...AP.bPct,[sub.id]:parseInt(e.target.value)||0});else{const newPct=parseInt(e.target.value)||0;updProf('pFx',{...AP.pFx,[sub.id]:Math.round(base*newPct/100)})}}} style={{...sI,width:50,height:24,fontSize:14,textAlign:"right",fontWeight:600}}/>
             <span style={{fontSize:13,color:C.mt}}>%</span>
-            <input type="number" value={mode==="pct"?euroFromPct:fV} onChange={e=>{if(mode==="fixed")setPFx(p=>({...p,[sub.id]:parseInt(e.target.value)||0}));else{const euro=parseInt(e.target.value)||0;setBPct(p=>({...p,[sub.id]:base>0?Math.round(euro/base*100):0}))}}} style={{...sI,width:50,height:24,fontSize:14,textAlign:"right",fontWeight:600}}/>
+            <input type="number" value={mode==="pct"?euroFromPct:fV} onChange={e=>{if(mode==="fixed")updProf('pFx',{...AP.pFx,[sub.id]:parseInt(e.target.value)||0});else{const euro=parseInt(e.target.value)||0;updProf('bPct',{...AP.bPct,[sub.id]:base>0?Math.round(euro/base*100):0})}}} style={{...sI,width:50,height:24,fontSize:14,textAlign:"right",fontWeight:600}}/>
             <span style={{fontSize:13,color:C.mt}}>€</span>
             <span style={{textAlign:"right",fontWeight:600,fontSize:14,color:C.tx}}>{fmt(target)}</span>
           </div>})}</div>)}
@@ -860,13 +1042,13 @@ export default function App(){
       <div style={sC}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:6,paddingBottom:6,borderBottom:`2px solid ${C.bd}`}}>
           <span style={{fontSize:16,fontWeight:700,color:C.tx}}>Nepredvideni stroški (planiran delež)</span>
-          <span style={{fontSize:15,fontWeight:700,color:C.or}}>{fmt(nepTarget)} <span style={{fontSize:13,color:C.mt,fontWeight:500}}>({manualBudget>0?pc(nepTarget,manualBudget):0}% proračuna)</span></span>
+          <span style={{fontSize:15,fontWeight:700,color:C.or}}>{fmt(nepTarget)} <span style={{fontSize:13,color:C.mt,fontWeight:500}}>({AP.budget>0?pc(nepTarget,AP.budget):0}% proračuna)</span></span>
         </div>
         <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap",marginBottom:8}}>
           <span style={{fontSize:14,color:C.mt}}>Način:</span>
-          <select style={{...sS,width:60,height:28,fontSize:14}} value={nepMd} onChange={e=>setNepMd(e.target.value)}><option value="pct">%</option><option value="fixed">€</option></select>
-          <input type="number" min={0} value={nepMd==="pct"?nepPct:nepFx} onChange={e=>{const v=parseInt(e.target.value)||0;if(nepMd==="pct")setNepPct(v);else setNepFx(v)}} style={{...sI,width:70,height:28,fontSize:14,textAlign:"right",fontWeight:600}}/>
-          <span style={{fontSize:14,color:C.mt}}>{nepMd==="pct"?"%":"€"}</span>
+          <select style={{...sS,width:60,height:28,fontSize:14}} value={AP.nepMd} onChange={e=>updProf('nepMd',e.target.value)}><option value="pct">%</option><option value="fixed">€</option></select>
+          <input type="number" min={0} value={AP.nepMd==="pct"?AP.nepPct:AP.nepFx} onChange={e=>{const v=parseInt(e.target.value)||0;if(AP.nepMd==="pct")updProf('nepPct',v);else updProf('nepFx',v)}} style={{...sI,width:70,height:28,fontSize:14,textAlign:"right",fontWeight:600}}/>
+          <span style={{fontSize:14,color:C.mt}}>{AP.nepMd==="pct"?"%":"€"}</span>
           <span style={{marginLeft:8,fontSize:14,color:C.mt}}>= rezerva za nepredvidene mesečne dogodke</span>
         </div>
         <div style={{fontSize:15,fontWeight:600,color:C.tx,padding:"4px 0 2px",marginTop:4}}>Mesečne nepredvidene postavke (dejanske)</div>
@@ -878,10 +1060,10 @@ export default function App(){
       {/* Total summary */}
       <div style={{...sC,background:"#f9fafb"}}>
         <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10,fontSize:15}}>
-          <div><div style={{color:C.mt,fontSize:13}}>Fiksni</div><div style={{fontWeight:700,color:C.bl}}>{fmt(fxSum)} <span style={{fontSize:12,color:C.mt}}>({manualBudget>0?pc(fxSum,manualBudget):0}%)</span></div></div>
-          <div><div style={{color:C.mt,fontSize:13}}>Variabilni</div><div style={{fontWeight:700,color:C.bl}}>{fmt(vrSum)} <span style={{fontSize:12,color:C.mt}}>({manualBudget>0?pc(vrSum,manualBudget):0}%)</span></div></div>
-          <div><div style={{color:C.mt,fontSize:13}}>Nepredvideni</div><div style={{fontWeight:700,color:C.or}}>{fmt(nepTarget)} <span style={{fontSize:12,color:C.mt}}>({manualBudget>0?pc(nepTarget,manualBudget):0}%)</span></div></div>
-          <div><div style={{color:C.mt,fontSize:13}}>Skupaj plan</div><div style={{fontSize:18,fontWeight:800,color:totalPlan<=manualBudget?C.gn:C.rd}}>{fmt(totalPlan)} <span style={{fontSize:13,color:C.mt,fontWeight:500}}>({totalPct}% od {fmt(manualBudget)})</span></div></div>
+          <div><div style={{color:C.mt,fontSize:13}}>Fiksni</div><div style={{fontWeight:700,color:C.bl}}>{fmt(fxSum)} <span style={{fontSize:12,color:C.mt}}>({AP.budget>0?pc(fxSum,AP.budget):0}%)</span></div></div>
+          <div><div style={{color:C.mt,fontSize:13}}>Variabilni</div><div style={{fontWeight:700,color:C.bl}}>{fmt(vrSum)} <span style={{fontSize:12,color:C.mt}}>({AP.budget>0?pc(vrSum,AP.budget):0}%)</span></div></div>
+          <div><div style={{color:C.mt,fontSize:13}}>Nepredvideni</div><div style={{fontWeight:700,color:C.or}}>{fmt(nepTarget)} <span style={{fontSize:12,color:C.mt}}>({AP.budget>0?pc(nepTarget,AP.budget):0}%)</span></div></div>
+          <div><div style={{color:C.mt,fontSize:13}}>Skupaj plan</div><div style={{fontSize:18,fontWeight:800,color:totalPlan<=AP.budget?C.gn:C.rd}}>{fmt(totalPlan)} <span style={{fontSize:13,color:C.mt,fontWeight:500}}>({totalPct}% od {fmt(AP.budget)})</span></div></div>
         </div>
       </div>
     </div>;})()}
@@ -953,52 +1135,134 @@ export default function App(){
     </div>}
 
     {/* ===== NASTAVITVE ===== */}
-    {vw==="settings"&&<div>
-      <h2 style={{fontSize:24,fontWeight:700,margin:"0 0 12px"}}>Nastavitve</h2>
-      <div style={sC}><div style={{fontSize:16,fontWeight:600,marginBottom:6}}>Uporabnik</div><div style={{fontSize:18}}>Prijavljen: <strong>{curUser}</strong> <span style={sT(isSA?"#dbeafe":"#dcfce7",isSA?C.bl:"#166534")}>{curRole}</span></div></div>
-      {isSA&&<div style={sC}><div style={{fontSize:16,fontWeight:600,marginBottom:6}}>Spremeni geslo (superadmin)</div><div style={{display:"flex",gap:6,alignItems:"center",marginBottom:6,flexWrap:"wrap"}}><span style={{fontSize:17,minWidth:80}}>Uporabnik:</span><select style={{...sS,width:120}} id="chgPwdUser">{JSON.parse(localStorage.getItem('dp_accounts')||'[]').map(a=><option key={a.username}>{a.username}</option>)}</select></div><input style={{...sI,width:"100%",marginBottom:6}} type="password" value={sNP} onChange={e=>setSNP(e.target.value)} placeholder="Novo geslo (≥ 6)"/><input style={{...sI,width:"100%",marginBottom:6}} type="password" value={sNP2} onChange={e=>setSNP2(e.target.value)} placeholder="Ponovi"/><button style={sB(true)} onClick={()=>{const user=document.getElementById('chgPwdUser')?.value;if(user)doChgPwd(user,sNP)}}>Spremeni</button></div>}
-      {isSA&&<CreateUserForm onAdd={async(u,p,e)=>{const accs=JSON.parse(localStorage.getItem('dp_accounts')||'[]');if(accs.find(a=>a.username===u)){setSMsg('Uporabnik že obstaja!');return}const salt=Array.from(crypto.getRandomValues(new Uint8Array(16))).join('');const h=await hPwd(p,salt);accs.push({username:u,hash:h,salt,role:'admin',email:e});localStorage.setItem('dp_accounts',JSON.stringify(accs));setAdminConf(prev=>({...prev,[u]:{varsav:false,crypto:false,settings:false}}));setSMsg(`Uporabnik ${u} ustvarjen!`)}}/>}
-      {isSA&&(()=>{const reqs=ld('dp_resetreqs',[]);return reqs.length>0?<div style={{...sC,border:"1px solid #fde68a",background:"#fefce8"}}><div style={{fontSize:16,fontWeight:600,marginBottom:6}}>Zahteve za ponastavitev gesla</div>{reqs.map((r,i)=><div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"4px 0",borderBottom:`1px solid ${C.fn}`}}><span style={{fontSize:18}}>{r.email} — {r.date}</span><div style={{display:"flex",gap:4}}><button style={{...sB(true),height:24,fontSize:16}} onClick={()=>{const accs=JSON.parse(localStorage.getItem('dp_accounts')||'[]');const acc=accs.find(a=>a.email===r.email);if(acc){const newPwd=prompt(`Novo geslo za ${acc.username}:`);if(newPwd)doChgPwd(acc.username,newPwd)}const updated=reqs.filter((_,j)=>j!==i);sv('dp_resetreqs',updated);setSMsg('Geslo ponastavljeno.')}}>Ponastavi</button><button style={{...sB(false),height:24,fontSize:16,color:C.rd}} onClick={()=>{const updated=reqs.filter((_,j)=>j!==i);sv('dp_resetreqs',updated)}}>Zavrni</button></div></div>)}</div>:null})()}
-      {isSA&&<div style={sC}><div style={{fontSize:16,fontWeight:600,marginBottom:6}}>Aktivni uporabniki</div>{JSON.parse(localStorage.getItem('dp_accounts')||'[]').map((a,i)=><div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"4px 0",borderBottom:`1px solid ${C.fn}`,fontSize:18}}><span><strong>{a.username}</strong> <span style={sT(a.role==='superadmin'?"#dbeafe":"#dcfce7",a.role==='superadmin'?C.bl:"#166534")}>{a.role}</span></span><span style={{color:C.mt}}>{a.email||"brez emaila"}</span></div>)}</div>}
-      {isSA&&<div style={sC}><div style={{fontSize:16,fontWeight:600,marginBottom:6}}>Gesla za zaklenjene sekcije</div><div style={{display:"flex",gap:6,alignItems:"center",marginBottom:6}}><span style={{fontSize:17,minWidth:80}}>Kripto:</span><input style={{...sI,flex:1}} type="password" value={sCP} onChange={e=>setSCP(e.target.value)} placeholder="Geslo za kripto"/><button style={sB(true)} onClick={()=>{sv('dp_cpwd',sCP);setSMsg('Kripto geslo nastavljeno!');setSCP('')}}>Nastavi</button></div><div style={{display:"flex",gap:6,alignItems:"center"}}><span style={{fontSize:17,minWidth:80}}>Varčevanje:</span><input style={{...sI,flex:1}} type="password" id="savPwdSet" placeholder="Geslo za varčevanje"/><button style={sB(true)} onClick={()=>{sv('dp_savpwd',document.getElementById('savPwdSet')?.value||'');setSMsg('Varčevanje geslo nastavljeno!')}}>Nastavi</button></div></div>}
-      {isSA&&<div style={sC}><div style={{fontSize:16,fontWeight:600,marginBottom:6}}>Vidnost kategorij za admin uporabnike</div><div style={{fontSize:17,color:C.mt,marginBottom:8}}>Izberi katere kategorije bodo vidne admin uporabnikom (ne-superadmin). Superadmin vidi vedno vse.</div><div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:4}}>{CATS.map(cat=><label key={cat.id} style={{display:"flex",alignItems:"center",gap:6,fontSize:17,padding:"3px 0",cursor:"pointer"}}><input type="checkbox" checked={adminViews.includes(cat.id)} onChange={e=>{if(e.target.checked)setAdminViews(v=>[...v,cat.id]);else setAdminViews(v=>v.filter(x=>x!==cat.id))}}/>{cat.nm}</label>)}</div><div style={{display:"flex",gap:6,marginTop:8}}><button style={{...sB(false),fontSize:16,height:24}} onClick={()=>setAdminViews(CATS.map(c=>c.id))}>Izberi vse</button><button style={{...sB(false),fontSize:16,height:24}} onClick={()=>setAdminViews([])}>Počisti</button></div></div>}
-      <div style={sC}>
-        <div style={{fontSize:16,fontWeight:600,marginBottom:6}}>Postavke (Fiksni & Variabilni stroški)</div>
-        <div style={{fontSize:14,color:C.mt,marginBottom:10}}>Preimenuj postavko, jo trajno skrij iz vseh pogledov, ali izbriši (samo če nima nobenih dejanskih vnosov v letu).</div>
-        {CATS.filter(c=>c.id!=="unexpected").map(cat=>{
-          const subsWithStats=cat.subs.map(sub=>{let total=0,plan=0;for(let m=0;m<12;m++){const mdata=yd[m]||initM();total+=mdata.subs?.[sub.id]?.actual||0;plan+=mdata.subs?.[sub.id]?.plan||0}return{sub,total,plan,empty:total===0&&plan===0}});
-          return<div key={cat.id} style={{marginBottom:10,paddingBottom:8,borderBottom:`1px solid ${C.fn}`}}>
-            <div style={{fontSize:15,fontWeight:700,color:C.tx,marginBottom:6,display:"flex",justifyContent:"space-between"}}>
-              <span>{cat.nm} <span style={sT(cat.tp==="fixed"?"#dbeafe":"#fef3c7",cat.tp==="fixed"?C.bl:"#92400e")}>{cat.tp==="fixed"?"Fiksni":"Variabilni"}</span></span>
-            </div>
-            {subsWithStats.map(({sub,total,plan,empty})=><div key={sub.id} style={{display:"grid",gridTemplateColumns:"1fr 220px 100px 110px 28px",gap:6,alignItems:"center",padding:"4px 0",fontSize:14}}>
-              <span style={{color:"#666",fontSize:13}}>{sub.nm}</span>
-              <input style={{...sI,height:26,fontSize:13}} value={subRename[sub.id]||""} onChange={e=>setSubRename(p=>({...p,[sub.id]:e.target.value}))} placeholder={`(privzeto: ${sub.nm.substring(0,20)})`}/>
-              <span style={{fontSize:12,color:empty?C.gn:C.mt,textAlign:"right"}}>{empty?"✓ Brez podatkov":`${fmt(total)}/${fmt(plan)}`}</span>
-              <label style={{display:"flex",alignItems:"center",gap:4,fontSize:12,cursor:"pointer",color:subVis[sub.id]?C.rd:C.mt}}>
-                <input type="checkbox" checked={subVis[sub.id]===true} onChange={e=>setSubVis(p=>({...p,[sub.id]:e.target.checked?true:false}))}/>
-                {subVis[sub.id]?"Skrito":"Skrij trajno"}
-              </label>
-              <button type="button" disabled={!empty} title={empty?"Izbriši (skrij trajno)":"Najprej počisti podatke"} onClick={()=>{if(empty&&confirm(`Skrij postavko "${sub.nm}" trajno? Ne bo več prikazana nikjer.`))setSubVis(p=>({...p,[sub.id]:true}))}} style={{background:"none",border:"none",color:empty?C.rd:"#ddd",cursor:empty?"pointer":"not-allowed",fontSize:14}}>🗑</button>
-            </div>)}
-          </div>;
-        })}
-        <div style={{marginTop:8,padding:"8px 10px",background:"#fef9c3",borderRadius:4,fontSize:13,color:"#713f12"}}>💡 <strong>Nasvet:</strong> Preimenuj postavke, da se ujemajo z tvojimi navadami. Postavka brez podatkov v letu lahko trajno skriješ — ne bo se pojavila nikjer.</div>
-      </div>
-      <div style={sC}><div style={{fontSize:16,fontWeight:600,marginBottom:6}}>Vrste prihodkov (Dropdown)</div><div style={{fontSize:17,color:C.mt,marginBottom:8}}>Dodaj ali odstrani vrste prihodkov</div><div style={{marginBottom:8}}>{itList.map((item,i)=><div key={i} style={{display:"flex",gap:6,alignItems:"center",padding:"4px 0",fontSize:17}}><input style={{...sI,flex:1,height:26}} value={item} onChange={e=>{const n=[...itList];n[i]=e.target.value;setItList(n)}}/><button type="button" onClick={()=>setItList(itList.filter((_,j)=>j!==i))} style={{background:"none",border:"none",color:C.rd,cursor:"pointer",fontSize:16}}>✕</button></div>)}<button type="button" style={{...sB(false),fontSize:16,marginTop:4}} onClick={()=>setItList([...itList,'Nova vrsta'])}>+ Dodaj</button></div></div>
-      <div style={sC}><div style={{fontSize:16,fontWeight:600,marginBottom:6}}>Nepredvideni stroški - Trgovine/Viri (Dropdown)</div><div style={{fontSize:17,color:C.mt,marginBottom:8}}>Dodaj ali odstrani trgovine in vire za nepredvidene stroške</div><div style={{marginBottom:8,maxHeight:200,overflowY:"auto"}}>{kuList.map((item,i)=><div key={i} style={{display:"flex",gap:6,alignItems:"center",padding:"4px 0",fontSize:17}}><input style={{...sI,flex:1,height:26}} value={item} onChange={e=>{const n=[...kuList];n[i]=e.target.value;setKuList(n)}}/><button type="button" onClick={()=>setKuList(kuList.filter((_,j)=>j!==i))} style={{background:"none",border:"none",color:C.rd,cursor:"pointer",fontSize:16}}>✕</button></div>)}<button type="button" style={{...sB(false),fontSize:16,marginTop:4}} onClick={()=>setKuList([...kuList,'Nova trgovina'])}>+ Dodaj</button></div></div>
-      <div style={sC}><div style={{fontSize:16,fontWeight:600,marginBottom:6}}>Priložnosti za Wishlist</div><div style={{fontSize:17,color:C.mt,marginBottom:8}}>Dodaj ali odstrani priložnosti (npr. rojstni dnevi, prazniki)</div><div style={{marginBottom:8}}>{occasions.map((occ,i)=><div key={i} style={{display:"flex",gap:6,alignItems:"center",padding:"4px 0",fontSize:17}}><input style={{...sI,flex:1,height:26}} value={occ} onChange={e=>{const n=[...occasions];n[i]=e.target.value;setOccasions(n)}}/><button type="button" onClick={()=>setOccasions(occasions.filter((_,j)=>j!==i))} style={{background:"none",border:"none",color:C.rd,cursor:"pointer",fontSize:16}}>✕</button></div>)}<button type="button" style={{...sB(false),fontSize:16,marginTop:4}} onClick={()=>setOccasions([...occasions,'Nova priložnost'])}>+ Dodaj</button></div></div>
-      <div style={sC}><div style={{fontSize:16,fontWeight:600,marginBottom:6}}>Podatki in varnostne kopije</div>
-        <div style={{fontSize:17,color:C.mt,marginBottom:8}}>Priporočamo varnostno kopijo vsaj vsaka 2 tedna. Zadnja kopija: {localStorage.getItem('dp_lastbackup')?new Date(parseInt(localStorage.getItem('dp_lastbackup'))).toLocaleDateString("sl-SI"):"nikoli"}</div>
-        <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:8}}>
-          <button style={{...sB(true),background:"#d97706"}} onClick={()=>{createBackup();localStorage.setItem('dp_lastbackup',String(Date.now()));setSMsg('Varnostna kopija prenesena!')}}>Varnostna kopija (JSON)</button>
-          <button style={sB(false)} onClick={doExport}>Izvoz Excel</button>
-          <label style={{...sB(false),display:"flex",alignItems:"center",cursor:"pointer"}}><span>Obnovi iz kopije</span><input type="file" accept=".json" style={{display:"none"}} onChange={async e=>{const f=e.target.files?.[0];if(!f)return;try{const msg=await restoreBackup(f);setSMsg(msg+' Stran se bo osvežila.');setTimeout(()=>window.location.reload(),2000)}catch(err){setSMsg('Napaka: '+err)}}}/></label>
-        </div>
-        <button style={{...sB(false),color:C.rd,borderColor:C.rd}} onClick={()=>{if(confirm('Izbriši vse podatke? To je nepovratno!')){localStorage.clear();sessionStorage.clear();window.location.reload()}}}>Izbriši vse podatke</button>
-      </div>
-      {sMsg&&<div style={{fontSize:18,color:C.gn,marginTop:8}}>{sMsg}</div>}
-    </div>}
+    {vw==="settings"&&(()=>{
+      const SecHdr=({k,icon,title,sub})=><div onClick={()=>togSec(k)} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 14px",background:settingsOpen[k]?"#f0f7ff":"#f8f9fa",border:`1px solid ${settingsOpen[k]?"#bfdbfe":C.fn}`,borderRadius:settingsOpen[k]?"6px 6px 0 0":6,cursor:"pointer",marginTop:8,userSelect:"none"}}>
+        <div style={{display:"flex",alignItems:"center",gap:8}}><span style={{fontSize:17,fontWeight:600}}>{icon} {title}</span>{sub&&<span style={{fontSize:13,color:C.mt}}>{sub}</span>}</div>
+        <span style={{fontSize:14,color:C.mt}}>{settingsOpen[k]?"▲":"▼"}</span>
+      </div>;
+      const SecBody=({k,children})=>settingsOpen[k]?<div style={{border:`1px solid #bfdbfe`,borderTop:"none",borderRadius:"0 0 6px 6px",padding:"12px 14px",background:"#fff",marginBottom:4}}>{children}</div>:null;
+      const allTabs=[["dash","Pregled"],["pct","Plan"],["entry","Mesečni vnos"],["annual","Letni pregled"],["goals","Cilji"],["sim","Simulacija"],["wishes","Wishlist"],["varsav","Varčevanje"],["settings","Nastavitve"],["crypto","🔒"]];
+      return<div>
+        <h2 style={{fontSize:24,fontWeight:700,margin:"0 0 4px"}}>Nastavitve</h2>
+
+        {/* 👤 Račun */}
+        <SecHdr k="account" icon="👤" title="Račun" sub={`Prijavljen: ${curUser}`}/>
+        <SecBody k="account">
+          <div style={{fontSize:18,marginBottom:10}}>Prijavljen: <strong>{curUser}</strong> <span style={sT(isSA?"#dbeafe":"#dcfce7",isSA?C.bl:"#166534")}>{curRole}</span></div>
+          {isSA&&<><div style={{fontSize:15,fontWeight:600,marginBottom:6}}>Spremeni geslo</div>
+          <div style={{display:"flex",gap:6,alignItems:"center",marginBottom:6,flexWrap:"wrap"}}>
+            <span style={{fontSize:16,minWidth:80}}>Uporabnik:</span>
+            <select style={{...sS,width:140}} id="chgPwdUser">{JSON.parse(localStorage.getItem('dp_accounts')||'[]').map(a=><option key={a.username}>{a.username}</option>)}</select>
+          </div>
+          <input style={{...sI,width:"100%",marginBottom:6}} type="password" value={sNP} onChange={e=>setSNP(e.target.value)} placeholder="Novo geslo (≥ 6)"/>
+          <input style={{...sI,width:"100%",marginBottom:6}} type="password" value={sNP2} onChange={e=>setSNP2(e.target.value)} placeholder="Ponovi geslo"/>
+          <button style={sB(true)} onClick={()=>{const user=document.getElementById('chgPwdUser')?.value;if(user)doChgPwd(user,sNP)}}>Spremeni geslo</button>
+          <div style={{marginTop:12}}><CreateUserForm onAdd={async(u,p,e)=>{const accs=JSON.parse(localStorage.getItem('dp_accounts')||'[]');if(accs.find(a=>a.username===u)){setSMsg('Uporabnik že obstaja!');return}const salt=Array.from(crypto.getRandomValues(new Uint8Array(16))).join('');const h=await hPwd(p,salt);accs.push({username:u,hash:h,salt,role:'admin',email:e});localStorage.setItem('dp_accounts',JSON.stringify(accs));setAdminConf(prev=>({...prev,[u]:{varsav:false,crypto:false,settings:false}}));setSMsg(`Uporabnik ${u} ustvarjen!`)}}/></div>
+          </>}
+          {isSA&&<div style={{marginTop:10}}>
+            <div style={{fontSize:15,fontWeight:600,marginBottom:6}}>Aktivni uporabniki</div>
+            {JSON.parse(localStorage.getItem('dp_accounts')||'[]').map((a,i)=><div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"4px 0",borderBottom:`1px solid ${C.fn}`,fontSize:17}}><span><strong>{a.username}</strong> <span style={sT(a.role==='superadmin'?"#dbeafe":"#dcfce7",a.role==='superadmin'?C.bl:"#166534")}>{a.role}</span></span><span style={{color:C.mt}}>{a.email||"brez emaila"}</span></div>)}
+          </div>}
+          {isSA&&(()=>{const reqs=ld('dp_resetreqs',[]);return reqs.length>0?<div style={{marginTop:10,padding:10,background:"#fefce8",border:"1px solid #fde68a",borderRadius:4}}><div style={{fontSize:15,fontWeight:600,marginBottom:6}}>Zahteve za ponastavitev gesla</div>{reqs.map((r,i)=><div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"4px 0",borderBottom:`1px solid ${C.fn}`}}><span style={{fontSize:17}}>{r.email} — {r.date}</span><div style={{display:"flex",gap:4}}><button style={{...sB(true),height:26,fontSize:15}} onClick={()=>{const accs=JSON.parse(localStorage.getItem('dp_accounts')||'[]');const acc=accs.find(a=>a.email===r.email);if(acc){const newPwd=prompt(`Novo geslo za ${acc.username}:`);if(newPwd)doChgPwd(acc.username,newPwd)}const updated=reqs.filter((_,j)=>j!==i);sv('dp_resetreqs',updated);setSMsg('Geslo ponastavljeno.')}}>Ponastavi</button><button style={{...sB(false),height:26,fontSize:15,color:C.rd}} onClick={()=>{const updated=reqs.filter((_,j)=>j!==i);sv('dp_resetreqs',updated)}}>Zavrni</button></div></div>)}</div>:null})()}
+        </SecBody>
+
+        {/* 🔒 Varnost */}
+        {isSA&&<><SecHdr k="security" icon="🔒" title="Varnost" sub="Gesla sekcij • Vidnost za admins"/>
+        <SecBody k="security">
+          <div style={{fontSize:15,fontWeight:600,marginBottom:8}}>Gesla za zaklenjene sekcije</div>
+          <div style={{display:"flex",gap:6,alignItems:"center",marginBottom:8}}>
+            <span style={{fontSize:16,minWidth:90}}>Kripto:</span>
+            <input style={{...sI,flex:1}} type="password" value={sCP} onChange={e=>setSCP(e.target.value)} placeholder="Geslo za kripto"/>
+            <button style={sB(true)} onClick={()=>{sv('dp_cpwd',sCP);setSMsg('Kripto geslo nastavljeno!');setSCP('')}}>Nastavi</button>
+          </div>
+          <div style={{display:"flex",gap:6,alignItems:"center",marginBottom:12}}>
+            <span style={{fontSize:16,minWidth:90}}>Varčevanje:</span>
+            <input style={{...sI,flex:1}} type="password" id="savPwdSet" placeholder="Geslo za varčevanje"/>
+            <button style={sB(true)} onClick={()=>{sv('dp_savpwd',document.getElementById('savPwdSet')?.value||'');setSMsg('Varčevanje geslo nastavljeno!')}}>Nastavi</button>
+          </div>
+          <div style={{fontSize:15,fontWeight:600,marginBottom:6}}>Vidnost kategorij za admin uporabnike</div>
+          <div style={{fontSize:14,color:C.mt,marginBottom:8}}>Superadmin vidi vedno vse. Tukaj nastavi katere kategorije so vidne navadnim adminom.</div>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:4,marginBottom:8}}>{CATS.map(cat=><label key={cat.id} style={{display:"flex",alignItems:"center",gap:6,fontSize:16,padding:"3px 0",cursor:"pointer"}}><input type="checkbox" checked={adminViews.includes(cat.id)} onChange={e=>{if(e.target.checked)setAdminViews(v=>[...v,cat.id]);else setAdminViews(v=>v.filter(x=>x!==cat.id))}}/>{cat.nm}</label>)}</div>
+          <div style={{display:"flex",gap:6}}><button style={{...sB(false),fontSize:15,height:26}} onClick={()=>setAdminViews(CATS.map(c=>c.id))}>Izberi vse</button><button style={{...sB(false),fontSize:15,height:26}} onClick={()=>setAdminViews([])}>Počisti</button></div>
+        </SecBody></>}
+
+        {/* 🗂 Zavihki */}
+        <SecHdr k="tabs" icon="🗂" title="Zavihki" sub={`${tabHidden.length} skritih`}/>
+        <SecBody k="tabs">
+          <div style={{fontSize:14,color:C.mt,marginBottom:10}}>Skrij zavihke, ki jih ne potrebuješ, ali jih preimenuj.</div>
+          {allTabs.filter(([k])=>isSA||!["varsav","settings","crypto"].includes(k)).map(([k,def])=><div key={k} style={{display:"grid",gridTemplateColumns:"28px 1fr 1fr 32px",gap:8,alignItems:"center",padding:"5px 0",borderBottom:`1px solid ${C.fn}`}}>
+            <input type="checkbox" checked={!tabHidden.includes(k)} onChange={e=>{if(e.target.checked)setTabHidden(h=>h.filter(x=>x!==k));else setTabHidden(h=>[...h,k])}} style={{width:16,height:16,cursor:"pointer"}}/>
+            <span style={{fontSize:16,color:tabHidden.includes(k)?C.mt:C.tx}}>{def}</span>
+            <input style={{...sI,height:26,fontSize:14}} value={tabNames[k]||""} onChange={e=>setTabNames(n=>({...n,[k]:e.target.value}))} placeholder={`Preimenuji (privzeto: ${def})`}/>
+            {tabNames[k]&&<button onClick={()=>setTabNames(n=>{const c={...n};delete c[k];return c})} style={{background:"none",border:"none",color:C.mt,cursor:"pointer",fontSize:13}}>↺</button>}
+          </div>)}
+          <div style={{marginTop:8,display:"flex",gap:6}}>
+            <button style={{...sB(false),fontSize:14,height:26}} onClick={()=>setTabHidden([])}>Pokaži vse</button>
+            <button style={{...sB(false),fontSize:14,height:26}} onClick={()=>setTabNames({})}> Počisti preimenovanja</button>
+          </div>
+        </SecBody>
+
+        {/* 👁 Kategorije */}
+        <SecHdr k="cats" icon="👁" title="Kategorije & Postavke" sub="Preimenuj, skrij, izbriši"/>
+        <SecBody k="cats">
+          <div style={{fontSize:14,color:C.mt,marginBottom:10}}>Preimenuj postavko, jo trajno skrij, ali izbriši (samo če nima vnosov).</div>
+          {CATS.filter(c=>c.id!=="unexpected").map(cat=>{
+            const subsWithStats=cat.subs.map(sub=>{let total=0,plan=0;for(let m=0;m<12;m++){const mdata=yd[m]||initM();total+=mdata.subs?.[sub.id]?.actual||0;plan+=mdata.subs?.[sub.id]?.plan||0}return{sub,total,plan,empty:total===0&&plan===0}});
+            return<div key={cat.id} style={{marginBottom:10,paddingBottom:8,borderBottom:`1px solid ${C.fn}`}}>
+              <div style={{fontSize:14,fontWeight:700,color:C.tx,marginBottom:5,display:"flex",alignItems:"center",gap:6}}>
+                {cat.nm} <span style={sT(cat.tp==="fixed"?"#dbeafe":"#fef3c7",cat.tp==="fixed"?C.bl:"#92400e")}>{cat.tp==="fixed"?"Fiksni":"Variabilni"}</span>
+              </div>
+              {subsWithStats.map(({sub,total,plan,empty})=><div key={sub.id} style={{display:"grid",gridTemplateColumns:"1fr 200px 90px 100px 26px",gap:5,alignItems:"center",padding:"3px 0",fontSize:13}}>
+                <span style={{color:"#555"}}>{sub.nm}</span>
+                <input style={{...sI,height:24,fontSize:13}} value={subRename[sub.id]||""} onChange={e=>setSubRename(p=>({...p,[sub.id]:e.target.value}))} placeholder={`(${sub.nm.substring(0,18)})`}/>
+                <span style={{fontSize:12,color:empty?C.gn:C.mt,textAlign:"right"}}>{empty?"✓ prazno":`${fmt(total)}`}</span>
+                <label style={{display:"flex",alignItems:"center",gap:4,fontSize:12,cursor:"pointer",color:subVis[sub.id]?C.rd:C.mt}}>
+                  <input type="checkbox" checked={subVis[sub.id]===true} onChange={e=>setSubVis(p=>({...p,[sub.id]:e.target.checked}))}/>
+                  {subVis[sub.id]?"Skrito":"Skrij"}
+                </label>
+                <button type="button" disabled={!empty} title={empty?"Skrij trajno":"Najprej počisti podatke"} onClick={()=>{if(empty&&confirm(`Skrij "${sub.nm}" trajno?`))setSubVis(p=>({...p,[sub.id]:true}))}} style={{background:"none",border:"none",color:empty?C.rd:"#ddd",cursor:empty?"pointer":"not-allowed",fontSize:13}}>🗑</button>
+              </div>)}
+            </div>;
+          })}
+          <div style={{padding:"8px 10px",background:"#fef9c3",borderRadius:4,fontSize:13,color:"#713f12"}}>💡 Postavke brez podatkov v letu lahko trajno skriješ.</div>
+        </SecBody>
+
+        {/* 📋 Dropdown seznami */}
+        <SecHdr k="lists" icon="📋" title="Dropdown seznami" sub="Prihodki • Trgovine • Priložnosti"/>
+        <SecBody k="lists">
+          <div style={{fontSize:15,fontWeight:600,marginBottom:6}}>Vrste prihodkov</div>
+          <div style={{marginBottom:12}}>{itList.map((item,i)=><div key={i} style={{display:"flex",gap:6,alignItems:"center",padding:"3px 0"}}><input style={{...sI,flex:1,height:26,fontSize:15}} value={item} onChange={e=>{const n=[...itList];n[i]=e.target.value;setItList(n)}}/><button type="button" onClick={()=>setItList(itList.filter((_,j)=>j!==i))} style={{background:"none",border:"none",color:C.rd,cursor:"pointer",fontSize:15}}>✕</button></div>)}<button type="button" style={{...sB(false),fontSize:14,marginTop:4}} onClick={()=>setItList([...itList,'Nova vrsta'])}>+ Dodaj</button></div>
+          <div style={{fontSize:15,fontWeight:600,marginBottom:6}}>Trgovine / Viri (nepredvideni)</div>
+          <div style={{marginBottom:12,maxHeight:180,overflowY:"auto"}}>{kuList.map((item,i)=><div key={i} style={{display:"flex",gap:6,alignItems:"center",padding:"3px 0"}}><input style={{...sI,flex:1,height:26,fontSize:15}} value={item} onChange={e=>{const n=[...kuList];n[i]=e.target.value;setKuList(n)}}/><button type="button" onClick={()=>setKuList(kuList.filter((_,j)=>j!==i))} style={{background:"none",border:"none",color:C.rd,cursor:"pointer",fontSize:15}}>✕</button></div>)}<button type="button" style={{...sB(false),fontSize:14,marginTop:4}} onClick={()=>setKuList([...kuList,'Nova trgovina'])}>+ Dodaj</button></div>
+          <div style={{fontSize:15,fontWeight:600,marginBottom:6}}>Priložnosti (Wishlist)</div>
+          <div>{occasions.map((occ,i)=><div key={i} style={{display:"flex",gap:6,alignItems:"center",padding:"3px 0"}}><input style={{...sI,flex:1,height:26,fontSize:15}} value={occ} onChange={e=>{const n=[...occasions];n[i]=e.target.value;setOccasions(n)}}/><button type="button" onClick={()=>setOccasions(occasions.filter((_,j)=>j!==i))} style={{background:"none",border:"none",color:C.rd,cursor:"pointer",fontSize:15}}>✕</button></div>)}<button type="button" style={{...sB(false),fontSize:14,marginTop:4}} onClick={()=>setOccasions([...occasions,'Nova priložnost'])}>+ Dodaj</button></div>
+        </SecBody>
+
+        {/* 💾 Podatki */}
+        <SecHdr k="data" icon="💾" title="Podatki & Varnostne kopije" sub={`Zadnja kopija: ${localStorage.getItem('dp_lastbackup')?new Date(parseInt(localStorage.getItem('dp_lastbackup'))).toLocaleDateString("sl-SI"):"nikoli"}`}/>
+        <SecBody k="data">
+          <div style={{fontSize:14,color:C.mt,marginBottom:10}}>Priporočamo varnostno kopijo vsaj vsaka 2 tedna.</div>
+          <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:10}}>
+            <button style={{...sB(true),background:"#d97706"}} onClick={()=>{createBackup();localStorage.setItem('dp_lastbackup',String(Date.now()));setSMsg('Varnostna kopija prenesena!')}}>Varnostna kopija (JSON)</button>
+            <button style={sB(false)} onClick={doExport}>Izvoz Excel</button>
+            <label style={{...sB(false),display:"flex",alignItems:"center",cursor:"pointer"}}><span>Obnovi iz kopije</span><input type="file" accept=".json" style={{display:"none"}} onChange={async e=>{const f=e.target.files?.[0];if(!f)return;try{const msg=await restoreBackup(f);setSMsg(msg+' Stran se bo osvežila.');setTimeout(()=>window.location.reload(),2000)}catch(err){setSMsg('Napaka: '+err)}}}/></label>
+          </div>
+          <button style={{...sB(false),color:C.rd,borderColor:C.rd}} onClick={()=>{if(confirm('Izbriši vse podatke? To je nepovratno!')){localStorage.clear();sessionStorage.clear();window.location.reload()}}}>🗑 Izbriši vse podatke</button>
+        </SecBody>
+
+        {/* 🕐 Dnevni posnetki */}
+        <SecHdr k="snapshots" icon="🕐" title="Dnevni posnetki" sub="Obnovi stanje iz preteklega dne"/>
+        <SecBody k="snapshots">
+          <div style={{fontSize:14,color:C.mt,marginBottom:10}}>Vsak dan se samodejno shrani posnetek podatkov. Obnovi lahko do 30 dni nazaj.</div>
+          {(()=>{const snaps=ld('dp_snapshots',{});const dates=Object.keys(snaps).sort().reverse();return dates.length===0?<div style={{fontSize:15,color:C.mt}}>Ni shranjenih posnetkov.</div>:dates.map(d=><div key={d} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"6px 0",borderBottom:`1px solid ${C.fn}`}}>
+            <span style={{fontSize:16}}>{new Date(d).toLocaleDateString("sl-SI",{weekday:"short",day:"numeric",month:"long",year:"numeric"})}</span>
+            <button style={{...sB(false),fontSize:14,height:26}} onClick={()=>{if(confirm(`Obnovi stanje iz ${d}? Trenutni podatki bodo prepisani.`)){const snap=snaps[d];Object.entries(snap).forEach(([k,v])=>{if(v!==null)localStorage.setItem(k,JSON.stringify(v));else localStorage.removeItem(k)});setSMsg(`Stanje iz ${d} obnovljeno. Stran se osvežuje...`);setTimeout(()=>window.location.reload(),1500)}}}>Obnovi na ta dan</button>
+          </div>)})()}
+        </SecBody>
+
+        {sMsg&&<div style={{fontSize:18,color:C.gn,marginTop:10}}>{sMsg}</div>}
+      </div>;
+    })()}
 
     {/* ===== CRYPTO ===== */}
     {vw==="crypto"&&<div>
