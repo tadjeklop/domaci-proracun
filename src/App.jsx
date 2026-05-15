@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, Component } from "react";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, LineChart, Line, Legend, AreaChart, Area } from "recharts";
 import * as XLSX from 'xlsx';
 import BankImport from './components/BankImport.jsx';
+import InstallPrompt from './components/InstallPrompt.jsx';
 
 // ===== ERROR BOUNDARY =====
 class EB extends Component{constructor(p){super(p);this.state={e:null}}static getDerivedStateFromError(e){return{e}}render(){if(this.state.e)return<div style={{padding:'2rem',textAlign:'center'}}><h2>Napaka</h2><p>{this.state.e?.message}</p><button onClick={()=>{this.setState({e:null});window.location.reload()}} style={aBtn}>Ponovno naloži</button></div>;return this.props.children}}
@@ -292,6 +293,7 @@ export default function App(){
   const[impPrev,setImpPrev]=useState(null);const[impLog,setImpLog]=useState([]);
   const[showNG,setShowNG]=useState(false);const[showSavCfg,setShowSavCfg]=useState(false);
   const[savVis,setSavVis]=useState(()=>ld('dp_sv',["vacSav","etf","tradeRep"]));
+  const[billDueDays,setBillDueDays]=useState(()=>ld('dp_billdays',{})); // {subId: dayOfMonth}
   const[simFrom,setSimFrom]=useState("2026-05-01");const[simTo,setSimTo]=useState("2029-04-30");
   const[simG,setSimG]=useState(3);const[simI,setSimI]=useState(2);const[simC,setSimC]=useState(5);const[simE,setSimE]=useState(100);
   const[simSc,setSimSc]=useState([]);const[simViz,setSimViz]=useState("bar");
@@ -354,9 +356,28 @@ export default function App(){
   const[sNP,setSNP]=useState('');const[sNP2,setSNP2]=useState('');const[sCP,setSCP]=useState('');const[sMsg,setSMsg]=useState('');
 
   // Persist
-  useEffect(()=>{sv('dp_data',data)},[data]);useEffect(()=>{sv('dp_log',cLog.slice(0,200))},[cLog]);useEffect(()=>{sv('dp_goals',goals)},[goals]);useEffect(()=>{sv('dp_cry',cryH)},[cryH]);useEffect(()=>{sv('dp_profiles',budgetProfiles)},[budgetProfiles]);useEffect(()=>{sv('dp_activeprofid',activeProfId)},[activeProfId]);useEffect(()=>{sv('dp_sv',savVis)},[savVis]);useEffect(()=>{sv('dp_savdata',savData)},[savData]);useEffect(()=>{sv('dp_pending',pendingRegs)},[pendingRegs]);useEffect(()=>{sv('dp_simman',simManual)},[simManual]);useEffect(()=>{sv('dp_simcats',simCats)},[simCats]);useEffect(()=>{sv('dp_simret',simReturn)},[simReturn]);useEffect(()=>{sv('dp_siminit',simInitial)},[simInitial]);useEffect(()=>{sv('dp_simev',simEvents)},[simEvents]);useEffect(()=>{sv('dp_adminviews',adminViews)},[adminViews]);useEffect(()=>{sv('dp_subvis',subVis)},[subVis]);useEffect(()=>{sv('dp_subren',subRename)},[subRename]);useEffect(()=>{sv('dp_customsubs',customSubs)},[customSubs]);useEffect(()=>{sv('dp_customcatgroups',customCatGroups)},[customCatGroups]);useEffect(()=>{sv('dp_suborder',subOrder)},[subOrder]);useEffect(()=>{sv('dp_subalerts',subAlerts)},[subAlerts]);useEffect(()=>{sv('dp_audit',auditLog.slice(0,500))},[auditLog]);useEffect(()=>{sv('dp_adminconf',adminConf)},[adminConf]);useEffect(()=>{sv('dp_it',itList)},[itList]);useEffect(()=>{sv('dp_ku',kuList)},[kuList]);useEffect(()=>{sv('dp_wishes',wishes)},[wishes]);useEffect(()=>{sv('dp_occasions',occasions)},[occasions]);useEffect(()=>{sv('dp_tabhidden',tabHidden)},[tabHidden]);useEffect(()=>{sv('dp_tabnames',tabNames)},[tabNames]);useEffect(()=>{sv('dp_hideinc',hideIncome)},[hideIncome]);
+  useEffect(()=>{sv('dp_data',data)},[data]);useEffect(()=>{sv('dp_log',cLog.slice(0,200))},[cLog]);useEffect(()=>{sv('dp_goals',goals)},[goals]);useEffect(()=>{sv('dp_cry',cryH)},[cryH]);useEffect(()=>{sv('dp_profiles',budgetProfiles)},[budgetProfiles]);useEffect(()=>{sv('dp_activeprofid',activeProfId)},[activeProfId]);useEffect(()=>{sv('dp_sv',savVis)},[savVis]);useEffect(()=>{sv('dp_savdata',savData)},[savData]);useEffect(()=>{sv('dp_pending',pendingRegs)},[pendingRegs]);useEffect(()=>{sv('dp_simman',simManual)},[simManual]);useEffect(()=>{sv('dp_simcats',simCats)},[simCats]);useEffect(()=>{sv('dp_simret',simReturn)},[simReturn]);useEffect(()=>{sv('dp_siminit',simInitial)},[simInitial]);useEffect(()=>{sv('dp_simev',simEvents)},[simEvents]);useEffect(()=>{sv('dp_adminviews',adminViews)},[adminViews]);useEffect(()=>{sv('dp_subvis',subVis)},[subVis]);useEffect(()=>{sv('dp_subren',subRename)},[subRename]);useEffect(()=>{sv('dp_customsubs',customSubs)},[customSubs]);useEffect(()=>{sv('dp_customcatgroups',customCatGroups)},[customCatGroups]);useEffect(()=>{sv('dp_suborder',subOrder)},[subOrder]);useEffect(()=>{sv('dp_subalerts',subAlerts)},[subAlerts]);useEffect(()=>{sv('dp_audit',auditLog.slice(0,500))},[auditLog]);useEffect(()=>{sv('dp_adminconf',adminConf)},[adminConf]);useEffect(()=>{sv('dp_it',itList)},[itList]);useEffect(()=>{sv('dp_ku',kuList)},[kuList]);useEffect(()=>{sv('dp_wishes',wishes)},[wishes]);useEffect(()=>{sv('dp_occasions',occasions)},[occasions]);useEffect(()=>{sv('dp_tabhidden',tabHidden)},[tabHidden]);useEffect(()=>{sv('dp_tabnames',tabNames)},[tabNames]);useEffect(()=>{sv('dp_hideinc',hideIncome)},[hideIncome]);useEffect(()=>{sv('dp_billdays',billDueDays)},[billDueDays]);
   // Daily snapshot (once per day)
   useEffect(()=>{const today=new Date().toISOString().split('T')[0];const snaps=ld('dp_snapshots',{});if(!snaps[today]){const snap={};['dp_data','dp_goals','dp_cry','dp_wishes','dp_savdata','dp_profiles','dp_subvis','dp_subren','dp_simev','dp_simman','dp_simcats','dp_simret','dp_siminit'].forEach(k=>{try{const v=localStorage.getItem(k);snap[k]=v?JSON.parse(v):null}catch{}});const dates=Object.keys(snaps).sort().reverse();const trimmed={};dates.slice(0,29).forEach(d=>trimmed[d]=snaps[d]);trimmed[today]=snap;sv('dp_snapshots',trimmed)}},[]);
+
+  // Bill reminder notifications (local, no server needed)
+  useEffect(()=>{
+    if(authSt!=='auth'||!('Notification' in window))return;
+    const today=new Date().getDate();
+    const todayKey=new Date().toISOString().split('T')[0];
+    if(localStorage.getItem('dp_lastnotif')===todayKey)return;
+    const fixedSubs=CATS.filter(c=>c.tp==="fixed").flatMap(c=>c.subs);
+    const overdue=fixedSubs.filter(s=>{const due=billDueDays[s.id];if(!due)return false;const paid=(md.subs?.[s.id]?.actual||0)>0;return!paid&&today>due});
+    const soon=fixedSubs.filter(s=>{const due=billDueDays[s.id];if(!due)return false;const paid=(md.subs?.[s.id]?.actual||0)>0;const dl=due-today;return!paid&&dl>=0&&dl<=2});
+    if(!overdue.length&&!soon.length)return;
+    const send=()=>{
+      localStorage.setItem('dp_lastnotif',todayKey);
+      if(overdue.length)new Notification('Domači proračun — Zapadle položnice',{body:overdue.map(s=>s.nm.split('(')[0].trim()).join(', '),icon:'/pwa-192.svg'});
+      if(soon.length)new Notification('Domači proračun — Položnice kmalu',{body:soon.map(s=>`${s.nm.split('(')[0].trim()} (${billDueDays[s.id]}. v mes.)`).join(', '),icon:'/pwa-192.svg'});
+    };
+    if(Notification.permission==='granted')send();
+    else if(Notification.permission==='default')Notification.requestPermission().then(p=>{if(p==='granted')send()});
+  },[authSt,mo,yr,billDueDays]);
 
   useEffect(()=>{if(authSt==='init'){if(sessionStorage.getItem('dp_s')){setAuthSt('auth');setCurUser(sessionStorage.getItem('dp_u'));setCurRole(sessionStorage.getItem('dp_r'))}else setAuthSt('login')}},[]);
 
@@ -636,6 +657,54 @@ export default function App(){
         <div style={sC}><div style={{fontSize:17,fontWeight:600,color:C.sb,marginBottom:4}}>Razdelitev</div>{pieData.length>0?<div style={{display:"flex",alignItems:"center",gap:8}}><ResponsiveContainer width={100} height={100}><PieChart><Pie data={pieData} innerRadius={24} outerRadius={45} dataKey="value" stroke="none">{pieData.map((d,i)=><Cell key={i} fill={d.color}/>)}</Pie></PieChart></ResponsiveContainer><div style={{fontSize:18,color:"#666"}}>{pieData.slice(0,5).map((d,i)=><div key={i} style={{marginBottom:2}}><span style={{display:"inline-block",width:7,height:7,borderRadius:1,background:d.color,marginRight:2}}/>{d.name} {pc(d.value,tAc)}%</div>)}</div></div>:<div style={{fontSize:16,color:"#999",textAlign:"center",padding:12}}>Vnesi podatke</div>}</div>
         <div style={sC}><div style={{fontSize:17,fontWeight:600,color:C.sb,marginBottom:4}}>Trend {yr}</div><ResponsiveContainer width="100%" height={100}><BarChart data={trendData} barGap={0}><XAxis dataKey="name" tick={{fontSize:11}} axisLine={false} tickLine={false}/><YAxis hide/><Tooltip formatter={v=>fmt(v)} contentStyle={{fontSize:16}}/><Bar dataKey="Prihodki" fill={C.gn} radius={[2,2,0,0]} barSize={5}/><Bar dataKey="Odhodki" fill={C.rd} radius={[2,2,0,0]} barSize={5} opacity={0.6}/></BarChart></ResponsiveContainer></div>
       </div>
+
+      {/* Položnice */}
+      {(()=>{
+        const today=new Date().getDate();
+        const fixedSubs=effectiveCats.filter(c=>c.tp==="fixed").flatMap(c=>c.subs).filter(s=>subVis[s.id]!==true);
+        const tracked=fixedSubs.filter(s=>billDueDays[s.id]);
+        const untracked=fixedSubs.filter(s=>!billDueDays[s.id]);
+        const bills=tracked.map(sub=>{
+          const due=billDueDays[sub.id];const paid=(md.subs?.[sub.id]?.actual||0)>0;const dl=due-today;
+          const status=paid?'paid':dl<0?'overdue':dl<=2?'soon':'future';
+          return{sub,due,paid,dl,status};
+        }).sort((a,b)=>{const o={overdue:0,soon:1,future:2,paid:3};return o[a.status]-o[b.status]});
+        const [showBillCfg,setShowBillCfg]=React.useState(false);
+        return<div style={sC}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+            <span style={{fontSize:16,fontWeight:700,color:C.tx}}>Položnice</span>
+            <button onClick={()=>setShowBillCfg(v=>!v)} style={{fontSize:13,padding:"2px 8px",borderRadius:4,border:`1px solid ${C.bd}`,background:showBillCfg?"#dbeafe":"#f5f5f0",color:C.mt,cursor:"pointer"}}>{showBillCfg?"Zapri":"⚙ Urediroke"}</button>
+          </div>
+          {bills.length===0&&!showBillCfg&&<div style={{fontSize:14,color:C.mt}}>Nastavi datume zapadlosti z gumbom ⚙.</div>}
+          {bills.length>0&&<div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:showBillCfg?8:0}}>
+            {bills.map(({sub,due,paid,dl,status})=>{
+              const bg=status==='paid'?'#dcfce7':status==='overdue'?'#fee2e2':status==='soon'?'#fef3c7':'#f0f7ff';
+              const fc=status==='paid'?'#166534':status==='overdue'?C.rd:status==='soon'?'#92400e':C.bl;
+              const chip=status==='paid'?'✓ Plačano':status==='overdue'?`Zapadlo (${due}.)`:dl===0?`Danes (${due}.)`:dl===1?`Jutri (${due}.)`:`${due}. v mesecu`;
+              const nm=(subRename[sub.id]||sub.nm).split('(')[0].trim().split(' ').slice(0,2).join(' ');
+              return<div key={sub.id} style={{display:"flex",alignItems:"center",gap:5,padding:"5px 8px",borderRadius:6,background:bg,fontSize:13,border:`1px solid ${fc}30`}}>
+                <span style={{fontWeight:600,color:C.tx,maxWidth:120,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{nm}</span>
+                <span style={{color:fc,fontWeight:600,whiteSpace:"nowrap"}}>{chip}</span>
+                {!paid&&<button onClick={()=>uSub(sub.id,'actual',(md.subs?.[sub.id]?.plan||0))} style={{background:'none',border:`1px solid ${fc}`,borderRadius:3,padding:'1px 6px',fontSize:12,color:fc,cursor:'pointer'}}>✓</button>}
+              </div>;
+            })}
+          </div>}
+          {showBillCfg&&<div style={{borderTop:`1px solid ${C.bd}`,paddingTop:8}}>
+            <div style={{fontSize:13,color:C.mt,marginBottom:6}}>Nastavi dan v mesecu (1–31) za vsako postavko. Prazno = ni sledenja.</div>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:4}}>
+              {fixedSubs.map(sub=>{
+                const nm=(subRename[sub.id]||sub.nm).split('(')[0].trim();
+                return<label key={sub.id} style={{display:"flex",alignItems:"center",gap:6,fontSize:13,padding:"3px 0"}}>
+                  <span style={{flex:1,color:"#555",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}} title={nm}>{nm}</span>
+                  <input type="number" min="1" max="31" value={billDueDays[sub.id]||""} placeholder="—"
+                    onChange={e=>{const v=parseInt(e.target.value);setBillDueDays(p=>{const n={...p};if(v>=1&&v<=31)n[sub.id]=v;else delete n[sub.id];return n})}}
+                    style={{width:42,height:24,fontSize:13,border:"1px solid #ddd",borderRadius:4,padding:"0 4px",textAlign:"center"}}/>
+                </label>;
+              })}
+            </div>
+          </div>}
+        </div>;
+      })()}
     </div>}
 
     {/* ===== MESEČNI VNOS ===== */}
@@ -1330,5 +1399,5 @@ export default function App(){
       </div>}
     </div>}
 
-    </div></div></EB>;
+    </div></div><InstallPrompt/></EB>;
 }
