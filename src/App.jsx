@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, Component } from "react";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, LineChart, Line, Legend, AreaChart, Area } from "recharts";
 import * as XLSX from 'xlsx';
 import BankImport from './components/BankImport.jsx';
+import { parseNL } from './lib/bankImport.js';
 import InstallPrompt from './components/InstallPrompt.jsx';
 import { pushToCloud, pullFromCloud, collectSyncData, applySyncData } from './lib/cloudSync.js';
 
@@ -744,6 +745,34 @@ export default function App(){
         <div style={{display:"flex",gap:6,alignItems:"center"}}>{YPk}{MNav}<button onClick={()=>toggleClose(mo)} style={{...sB(isClosed),fontSize:16,background:isClosed?C.gn:undefined,color:isClosed?"#fff":undefined,border:isClosed?"none":undefined}}>{isClosed?"✓ Zaključen":"Zaključi mesec"}</button></div>
       </div>
       {isClosed&&<div style={{background:"#dcfce7",border:"1px solid #86efac",borderRadius:8,padding:"6px 12px",marginBottom:10,fontSize:17,color:"#166534"}}>Ta mesec je zaključen. Odpri ga z gumbom zgoraj za urejanje.</div>}
+      {/* Quick Add — natural language input */}
+      {(()=>{
+        const[nlText,setNlText]=React.useState('');
+        const[nlSel,setNlSel]=React.useState(null);
+        const bankMap=JSON.parse(localStorage.getItem('dp_bankmap')||'{}');
+        const parsed=nlText.trim()?parseNL(nlText,bankMap):{amt:null,subId:null,desc:''};
+        const matchedSub=parsed.subId?effectiveAS.find(s=>s.id===parsed.subId):null;
+        const doAdd=()=>{
+          const subId=nlSel||parsed.subId;
+          const amt=parsed.amt;
+          if(!subId||!amt||amt<=0)return;
+          addTransaction(subId,amt,parsed.desc||nlText);
+          setNlText('');setNlSel(null);
+        };
+        return<div style={{...sC,background:"#f0f7ff",border:"1px dashed #93c5fd",marginBottom:10,padding:"8px 12px"}}>
+          <div style={{fontSize:13,color:C.mt,marginBottom:4}}>Hitri vnos — naravni jezik <span style={{fontSize:12,opacity:0.7}}>npr. "75€ mercator živila"</span></div>
+          <div style={{display:"flex",gap:6,flexWrap:"wrap",alignItems:"center"}}>
+            <input style={{...sI,flex:1,minWidth:180,fontSize:15}} value={nlText} onChange={e=>{setNlText(e.target.value);setNlSel(null)}} onKeyDown={e=>e.key==='Enter'&&doAdd()} placeholder="znesek + opis..."/>
+            {parsed.amt&&<span style={{fontSize:14,fontWeight:700,color:C.gn}}>{fmt(parsed.amt)}</span>}
+            {parsed.subId&&<select style={{...sS,fontSize:13,height:28}} value={nlSel||parsed.subId} onChange={e=>setNlSel(e.target.value)}>
+              {effectiveAS.map(s=><option key={s.id} value={s.id}>{s.nm.substring(0,25)}</option>)}
+            </select>}
+            <button style={{...sB(true),height:28,fontSize:14,padding:"0 12px"}} onClick={doAdd} disabled={!parsed.amt||!(nlSel||parsed.subId)}>Dodaj</button>
+            {nlText&&<button style={{...sB(false),height:28,fontSize:14,padding:"0 8px"}} onClick={()=>{setNlText('');setNlSel(null)}}>✕</button>}
+          </div>
+          {parsed.amt&&!parsed.subId&&nlText.trim()&&<div style={{fontSize:13,color:C.or,marginTop:4}}>Kategoria ni prepoznana — izberi ručno.</div>}
+        </div>;
+      })()}
       {!hideIncome&&incomeBlock}
       <div style={{display:"grid",gridTemplateColumns:isMob?"1fr":"1fr 1fr",gap:10,alignItems:"start"}}>
         <CatEntry cats={visibleCats.filter(c=>c.tp==="fixed")} title="Fiksni stroški" md={md} subVis={subVis} subRename={subRename} expandBreakdown={expandBreakdown} txnInput={txnInput} toggleSubVis={toggleSubVis} setExpandBreakdown={setExpandBreakdown} setTxnInput={setTxnInput} addTransaction={addTransaction} removeTransaction={removeTransaction} updateTransactionComment={updateTransactionComment} uSub={uSub} subAlerts={subAlerts} dayFrac={dayFrac}/>

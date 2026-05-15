@@ -132,6 +132,19 @@ function detectColumns(headers) {
   };
 }
 
+// Parse natural language expense like "75€ pri Mercatorju za živila"
+export function parseNL(text, learnedMap = {}) {
+  const t = text.trim();
+  // Extract amount: 75, 75€, €75, 75,50€, 75.50
+  const amtMatch = t.match(/(?:^|[\s,])(\d+[.,]\d{1,2}|\d+)\s*€?/);
+  const amt = amtMatch ? parseFloat(amtMatch[1].replace(',', '.')) : null;
+  // Category suggestion using full text
+  const subId = suggestCategory(t, learnedMap);
+  // Description: strip leading amount tokens
+  const desc = t.replace(/^\d+[.,]?\d*\s*€?\s*/,'').replace(/€\s*\d+[.,]?\d*/,'').trim();
+  return { amt, subId, desc: desc || t };
+}
+
 export function parseCSV(text) {
   const lines = text.split(/\r?\n/).filter(l => l.trim());
   if (lines.length < 2) return [];
