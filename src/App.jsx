@@ -350,6 +350,7 @@ export default function App(){
   // Tab customization
   const[tabHidden,setTabHidden]=useState(()=>ld('dp_tabhidden',[]));
   const[tabNames,setTabNames]=useState(()=>ld('dp_tabnames',{}));
+  const[showPayday,setShowPayday]=useState(false);
   // Mesečni vnos
   const[hideIncome,setHideIncome]=useState(()=>ld('dp_hideinc',false));
   // Settings UI
@@ -718,7 +719,7 @@ export default function App(){
     {/* ===== MESEČNI VNOS ===== */}
     {vw==="entry"&&(()=>{
       const now=new Date();const isCurMo2=mo===now.getMonth()&&yr===now.getFullYear();const dInMo=new Date(yr,mo+1,0).getDate();const dayFrac=isCurMo2?now.getDate()/dInMo:0;
-      const incomeBlock=<><div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}><div style={{fontSize:16,fontWeight:600,color:C.sb}}>Prihodki</div><button onClick={()=>setHideIncome(h=>!h)} style={{fontSize:13,padding:"2px 8px",borderRadius:4,border:`1px solid ${C.bd}`,background:hideIncome?"#fef3c7":"#f5f5f0",color:C.mt,cursor:"pointer"}}>{hideIncome?"Pokaži prihodke ▾":"Skrij prihodke ▴"}</button></div>
+      const incomeBlock=<><div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}><div style={{fontSize:16,fontWeight:600,color:C.sb}}>Prihodki</div><button onClick={()=>setHideIncome(h=>!h)} style={{fontSize:13,padding:"2px 8px",borderRadius:4,border:`1px solid ${C.bd}`,background:hideIncome?"#fef3c7":"#f5f5f0",color:C.mt,cursor:"pointer"}}>{hideIncome?"Pokaži prihodke ▾":"Skrij prihodke ▴"}</button>{tInc>0&&<button onClick={()=>setShowPayday(true)} style={{fontSize:13,padding:"2px 10px",borderRadius:4,border:`1px solid ${C.bl}`,background:"#dbeafe",color:C.bl,cursor:"pointer",fontWeight:600}}>💰 Razdeli plačo</button>}</div>
       <div style={sC}>{["Kristina","Tadej"].map(person=><div key={person} style={{marginBottom:8}}><div style={{fontSize:18,fontWeight:600,color:C.bl,marginBottom:4}}>{person}</div><div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:6}}>{itList.map(t=><div key={`${person}-${t}`}><div style={{fontSize:18,color:"#999"}}>{t}</div><input style={{...sI,height:26,fontSize:17,width:"100%"}} defaultValue={md.income?.[person]?.[t]||""} onBlur={e=>uInc(person,t,e.target.value)} placeholder="0"/></div>)}</div></div>)}<div style={{borderTop:`1px solid ${C.bd}`,paddingTop:8}}><div style={{fontSize:17,fontWeight:600,color:C.sb,marginBottom:4}}>Dodatni prihodki</div>{(md.customIncome||[]).map((ci,i)=><div key={i} style={{fontSize:17,padding:"2px 0"}}>{ci.label} — {ci.person} — {fmt(ci.amount)}</div>)}<AddCI onAdd={addCI}/></div></div></>;
       return<div>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8,flexWrap:"wrap",gap:6}}>
@@ -1440,5 +1441,49 @@ export default function App(){
       </div>}
     </div>}
 
-    </div></div><InstallPrompt/></EB>;
+    </div></div>
+    <InstallPrompt/>
+    {showPayday&&(()=>{
+      const savCat=effectiveCats.find(c=>c.id==="savings_inv");
+      const savSubs=savCat?savCat.subs.filter(s=>subVis[s.id]!==true):[];
+      const fixedPlan=effectiveCats.filter(c=>c.tp==="fixed"&&c.id!=="savings_inv").reduce((s,c)=>s+cT(md,c,'plan'),0);
+      const [alloc,setAlloc]=React.useState(()=>{const a={};savSubs.forEach(s=>{a[s.id]=md.subs?.[s.id]?.plan||0});return a});
+      const totalAlloc=Object.values(alloc).reduce((s,v)=>s+v,0);
+      const available=tInc-fixedPlan;const free=available-totalAlloc;
+      const doApply=()=>{
+        savSubs.forEach(s=>{const v=alloc[s.id]||0;if(v>0){addTransaction(s.id,v,'💰 Razdelitev plače')}});
+        setShowPayday(false);
+      };
+      return<div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.5)',zIndex:1000,display:'flex',alignItems:'center',justifyContent:'center'}}>
+        <div style={{background:'#fff',borderRadius:12,padding:24,width:440,maxWidth:'95vw',maxHeight:'90vh',overflowY:'auto',boxShadow:'0 8px 32px rgba(0,0,0,0.2)'}}>
+          <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:16}}>
+            <h3 style={{fontSize:18,fontWeight:700,margin:0}}>💰 Razdeli plačo — {MF[mo]} {yr}</h3>
+            <button onClick={()=>setShowPayday(false)} style={{background:'none',border:'none',fontSize:20,cursor:'pointer',color:C.mt}}>✕</button>
+          </div>
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:8,marginBottom:16}}>
+            <div style={{...sC,marginBottom:0,textAlign:'center'}}><div style={{fontSize:11,color:C.mt,textTransform:'uppercase'}}>Prihodki</div><div style={{fontSize:20,fontWeight:700,color:C.gn}}>{fmt(tInc)}</div></div>
+            <div style={{...sC,marginBottom:0,textAlign:'center'}}><div style={{fontSize:11,color:C.mt,textTransform:'uppercase'}}>Fiksni plan</div><div style={{fontSize:20,fontWeight:700,color:C.rd}}>{fmt(fixedPlan)}</div></div>
+            <div style={{...sC,marginBottom:0,textAlign:'center',borderLeft:`3px solid ${available>=0?C.bl:C.rd}`}}><div style={{fontSize:11,color:C.mt,textTransform:'uppercase'}}>Na voljo</div><div style={{fontSize:20,fontWeight:700,color:available>=0?C.bl:C.rd}}>{fmt(available)}</div></div>
+          </div>
+          <div style={{fontSize:14,fontWeight:600,color:C.sb,marginBottom:8}}>Razporeditev v varčevanje</div>
+          {savSubs.map(s=>{const cur=md.subs?.[s.id]?.actual||0;return<div key={s.id} style={{display:'flex',alignItems:'center',gap:8,marginBottom:8,padding:'8px 10px',borderRadius:6,background:'#f8f7f4',border:`1px solid ${C.bd}`}}>
+            <div style={{flex:1}}>
+              <div style={{fontSize:14,fontWeight:600}}>{subRename[s.id]||s.nm}</div>
+              {cur>0&&<div style={{fontSize:12,color:C.gn}}>Že dodano ta mesec: {fmt(cur)}</div>}
+            </div>
+            <input type="number" min="0" value={alloc[s.id]||0} onChange={e=>setAlloc(p=>({...p,[s.id]:parseFloat(e.target.value)||0}))} style={{...sI,width:80,height:32,fontSize:14,textAlign:'right'}}/>
+            <span style={{fontSize:13,color:C.mt,minWidth:12}}>€</span>
+          </div>})}
+          <div style={{padding:'10px 12px',borderRadius:6,background:free>=0?'#dcfce7':'#fee2e2',marginTop:4,marginBottom:16,display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+            <span style={{fontSize:14,fontWeight:600,color:free>=0?'#166534':C.rd}}>Ostalo (svobodno)</span>
+            <span style={{fontSize:18,fontWeight:700,color:free>=0?C.gn:C.rd}}>{fmt(free)}</span>
+          </div>
+          <div style={{display:'flex',gap:8,justifyContent:'flex-end'}}>
+            <button style={sB(false)} onClick={()=>setShowPayday(false)}>Prekliči</button>
+            <button style={{...sB(true),background:C.gn}} onClick={doApply} disabled={totalAlloc===0}>Izvedi razporeditev ({fmt(totalAlloc)})</button>
+          </div>
+        </div>
+      </div>;
+    })()}
+    </EB>;
 }
