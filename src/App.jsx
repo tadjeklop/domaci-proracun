@@ -732,6 +732,34 @@ export default function App(){
           </div>}
         </div>;
       })()}
+
+      {/* Varčevalni cilji widget */}
+      {(()=>{
+        const now=new Date();
+        const linkedGoals=goals.filter(g=>g.autoPull&&g.source&&g.targetDate&&g.type==="saving"&&g.scope!=="monthly");
+        if(linkedGoals.length===0)return null;
+        return<div style={sC}>
+          <div style={{fontSize:16,fontWeight:700,color:C.tx,marginBottom:8}}>Varčevalni cilji</div>
+          {linkedGoals.map(g=>{
+            let current=0;const sub=effectiveAS.find(s=>s.id===g.source);if(!sub)return null;
+            if(g.pullFromMonth==="all"){for(let i=0;i<12;i++){const mdata=yd[i]||initM();if(mdata.closed)current+=mdata.subs?.[g.source]?.actual||0}}else{current=md.subs?.[g.source]?.actual||0}
+            const p=g.target>0?pc(current,g.target):0;
+            const td=new Date(g.targetDate+"-01");const moLeft=Math.max(1,(td.getFullYear()-now.getFullYear())*12+(td.getMonth()-now.getMonth()));
+            const reqMo=current<g.target?Math.ceil((g.target-current)/moLeft):0;
+            return<div key={g.id} style={{marginBottom:8,paddingBottom:8,borderBottom:`1px solid ${C.fn}`}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
+                <span style={{fontSize:14,fontWeight:600}}>{g.name}</span>
+                <span style={{fontSize:13,color:C.mt}}>{fmt(current)} / {fmt(g.target)}</span>
+              </div>
+              <div style={{height:5,borderRadius:3,background:"#eee",overflow:"hidden",marginBottom:3}}><div style={{height:"100%",width:`${Math.min(p,100)}%`,borderRadius:3,background:p>=100?C.gn:C.bl}}/></div>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                <span style={{fontSize:12,color:C.mt}}>{p}% • {moLeft} mes. do {g.targetDate}</span>
+                {reqMo>0&&<button style={{...sB(true),background:C.gn,fontSize:12,height:22,padding:"0 8px"}} onClick={()=>{addTransaction(g.source,reqMo,`💰 ${g.name}`);setVw('entry')}}>+ {fmt(reqMo)}</button>}
+              </div>
+            </div>;
+          })}
+        </div>;
+      })()}
     </div>}
 
     {/* ===== MESEČNI VNOS ===== */}
@@ -841,7 +869,10 @@ export default function App(){
         </div>
         <div style={{height:6,borderRadius:3,background:"#eee",overflow:"hidden"}}><div style={{height:"100%",width:`${Math.min(p,100)}%`,borderRadius:3,background:p>90&&g.type==="limit"?C.rd:C.bl}}/></div>
         <div style={{fontSize:17,color:C.mt,marginTop:4}}>{p}% {g.note&&`— ${g.note}`}</div>
-        {g.targetDate&&(()=>{const td=new Date(g.targetDate+"-01");const now=new Date();const moLeft=Math.max(1,(td.getFullYear()-now.getFullYear())*12+(td.getMonth()-now.getMonth()));const remaining=g.target-currentVal;const reqMo=remaining>0?Math.ceil(remaining/moLeft):0;const onTrack=reqMo<=0;return<div style={{marginTop:4,padding:"4px 8px",borderRadius:4,background:onTrack?"#dcfce7":"#fef3c7",fontSize:14,color:onTrack?"#166534":"#92400e",fontWeight:600}}>🎯 Do {g.targetDate}: {moLeft} mes. ostane {onTrack?"✓ cilj dosežen":` → potrebuješ ${fmt(reqMo)}/mesec`}</div>})()}
+        {g.targetDate&&(()=>{const td=new Date(g.targetDate+"-01");const now=new Date();const moLeft=Math.max(1,(td.getFullYear()-now.getFullYear())*12+(td.getMonth()-now.getMonth()));const remaining=g.target-currentVal;const reqMo=remaining>0?Math.ceil(remaining/moLeft):0;const onTrack=reqMo<=0;return<div style={{marginTop:4,display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
+          <div style={{padding:"4px 8px",borderRadius:4,background:onTrack?"#dcfce7":"#fef3c7",fontSize:14,color:onTrack?"#166534":"#92400e",fontWeight:600}}>🎯 Do {g.targetDate}: {moLeft} mes. ostane {onTrack?"✓ cilj dosežen":` → potrebuješ ${fmt(reqMo)}/mesec`}</div>
+          {!onTrack&&g.source&&reqMo>0&&<button style={{...sB(true),background:C.gn,fontSize:13,height:26,padding:"0 10px"}} onClick={()=>{addTransaction(g.source,reqMo,`💰 ${g.name} — ${new Date().toLocaleDateString('sl-SI')}`);setVw('entry')}}>💰 Financiraj {fmt(reqMo)}</button>}
+        </div>})()}
       </div>})}
       {goals.filter(g=>goalView==="general"?(g.scope!=="monthly"):(g.scope==="monthly"&&g.month===goalMonth)).length===0&&<div style={{fontSize:18,color:C.mt,textAlign:"center",padding:20}}>Ni ciljev za ta pogled. Dodaj novega z gumbom zgoraj.</div>}
     </div>}
