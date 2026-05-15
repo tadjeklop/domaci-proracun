@@ -3,6 +3,7 @@ import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveCo
 import * as XLSX from 'xlsx';
 import BankImport from './components/BankImport.jsx';
 import InstallPrompt from './components/InstallPrompt.jsx';
+import { pushToCloud, pullFromCloud, collectSyncData, applySyncData } from './lib/cloudSync.js';
 
 // ===== ERROR BOUNDARY =====
 class EB extends Component{constructor(p){super(p);this.state={e:null}}static getDerivedStateFromError(e){return{e}}render(){if(this.state.e)return<div style={{padding:'2rem',textAlign:'center'}}><h2>Napaka</h2><p>{this.state.e?.message}</p><button onClick={()=>{this.setState({e:null});window.location.reload()}} style={aBtn}>Ponovno naloži</button></div>;return this.props.children}}
@@ -294,6 +295,11 @@ export default function App(){
   const[showNG,setShowNG]=useState(false);const[showSavCfg,setShowSavCfg]=useState(false);
   const[savVis,setSavVis]=useState(()=>ld('dp_sv',["vacSav","etf","tradeRep"]));
   const[billDueDays,setBillDueDays]=useState(()=>ld('dp_billdays',{})); // {subId: dayOfMonth}
+  const[syncUrl,setSyncUrl]=useState(()=>ld('dp_syncurl',''));
+  const[syncToken,setSyncToken]=useState(()=>ld('dp_synctok',''));
+  const[syncPwd,setSyncPwd]=useState(()=>ld('dp_syncpwd',''));
+  const[syncStatus,setSyncStatus]=useState(''); // '', 'syncing', 'ok', 'err:...'
+  const[syncLastPush,setSyncLastPush]=useState(()=>ld('dp_synclastpush',null));
   const[simFrom,setSimFrom]=useState("2026-05-01");const[simTo,setSimTo]=useState("2029-04-30");
   const[simG,setSimG]=useState(3);const[simI,setSimI]=useState(2);const[simC,setSimC]=useState(5);const[simE,setSimE]=useState(100);
   const[simSc,setSimSc]=useState([]);const[simViz,setSimViz]=useState("bar");
@@ -347,7 +353,7 @@ export default function App(){
   // Mesečni vnos
   const[hideIncome,setHideIncome]=useState(()=>ld('dp_hideinc',false));
   // Settings UI
-  const[settingsOpen,setSettingsOpen]=useState({account:true,security:false,tabs:false,cats:false,lists:false,data:false,snapshots:false});
+  const[settingsOpen,setSettingsOpen]=useState({account:true,security:false,tabs:false,cats:false,lists:false,sync:false,data:false,snapshots:false});
   const togSec=(k)=>setSettingsOpen(p=>({...p,[k]:!p[k]}));
   // Plan tab profile UI
   const[showNewProf,setShowNewProf]=useState(false);const[newProfName,setNewProfName]=useState('');
@@ -356,7 +362,7 @@ export default function App(){
   const[sNP,setSNP]=useState('');const[sNP2,setSNP2]=useState('');const[sCP,setSCP]=useState('');const[sMsg,setSMsg]=useState('');
 
   // Persist
-  useEffect(()=>{sv('dp_data',data)},[data]);useEffect(()=>{sv('dp_log',cLog.slice(0,200))},[cLog]);useEffect(()=>{sv('dp_goals',goals)},[goals]);useEffect(()=>{sv('dp_cry',cryH)},[cryH]);useEffect(()=>{sv('dp_profiles',budgetProfiles)},[budgetProfiles]);useEffect(()=>{sv('dp_activeprofid',activeProfId)},[activeProfId]);useEffect(()=>{sv('dp_sv',savVis)},[savVis]);useEffect(()=>{sv('dp_savdata',savData)},[savData]);useEffect(()=>{sv('dp_pending',pendingRegs)},[pendingRegs]);useEffect(()=>{sv('dp_simman',simManual)},[simManual]);useEffect(()=>{sv('dp_simcats',simCats)},[simCats]);useEffect(()=>{sv('dp_simret',simReturn)},[simReturn]);useEffect(()=>{sv('dp_siminit',simInitial)},[simInitial]);useEffect(()=>{sv('dp_simev',simEvents)},[simEvents]);useEffect(()=>{sv('dp_adminviews',adminViews)},[adminViews]);useEffect(()=>{sv('dp_subvis',subVis)},[subVis]);useEffect(()=>{sv('dp_subren',subRename)},[subRename]);useEffect(()=>{sv('dp_customsubs',customSubs)},[customSubs]);useEffect(()=>{sv('dp_customcatgroups',customCatGroups)},[customCatGroups]);useEffect(()=>{sv('dp_suborder',subOrder)},[subOrder]);useEffect(()=>{sv('dp_subalerts',subAlerts)},[subAlerts]);useEffect(()=>{sv('dp_audit',auditLog.slice(0,500))},[auditLog]);useEffect(()=>{sv('dp_adminconf',adminConf)},[adminConf]);useEffect(()=>{sv('dp_it',itList)},[itList]);useEffect(()=>{sv('dp_ku',kuList)},[kuList]);useEffect(()=>{sv('dp_wishes',wishes)},[wishes]);useEffect(()=>{sv('dp_occasions',occasions)},[occasions]);useEffect(()=>{sv('dp_tabhidden',tabHidden)},[tabHidden]);useEffect(()=>{sv('dp_tabnames',tabNames)},[tabNames]);useEffect(()=>{sv('dp_hideinc',hideIncome)},[hideIncome]);useEffect(()=>{sv('dp_billdays',billDueDays)},[billDueDays]);
+  useEffect(()=>{sv('dp_data',data)},[data]);useEffect(()=>{sv('dp_log',cLog.slice(0,200))},[cLog]);useEffect(()=>{sv('dp_goals',goals)},[goals]);useEffect(()=>{sv('dp_cry',cryH)},[cryH]);useEffect(()=>{sv('dp_profiles',budgetProfiles)},[budgetProfiles]);useEffect(()=>{sv('dp_activeprofid',activeProfId)},[activeProfId]);useEffect(()=>{sv('dp_sv',savVis)},[savVis]);useEffect(()=>{sv('dp_savdata',savData)},[savData]);useEffect(()=>{sv('dp_pending',pendingRegs)},[pendingRegs]);useEffect(()=>{sv('dp_simman',simManual)},[simManual]);useEffect(()=>{sv('dp_simcats',simCats)},[simCats]);useEffect(()=>{sv('dp_simret',simReturn)},[simReturn]);useEffect(()=>{sv('dp_siminit',simInitial)},[simInitial]);useEffect(()=>{sv('dp_simev',simEvents)},[simEvents]);useEffect(()=>{sv('dp_adminviews',adminViews)},[adminViews]);useEffect(()=>{sv('dp_subvis',subVis)},[subVis]);useEffect(()=>{sv('dp_subren',subRename)},[subRename]);useEffect(()=>{sv('dp_customsubs',customSubs)},[customSubs]);useEffect(()=>{sv('dp_customcatgroups',customCatGroups)},[customCatGroups]);useEffect(()=>{sv('dp_suborder',subOrder)},[subOrder]);useEffect(()=>{sv('dp_subalerts',subAlerts)},[subAlerts]);useEffect(()=>{sv('dp_audit',auditLog.slice(0,500))},[auditLog]);useEffect(()=>{sv('dp_adminconf',adminConf)},[adminConf]);useEffect(()=>{sv('dp_it',itList)},[itList]);useEffect(()=>{sv('dp_ku',kuList)},[kuList]);useEffect(()=>{sv('dp_wishes',wishes)},[wishes]);useEffect(()=>{sv('dp_occasions',occasions)},[occasions]);useEffect(()=>{sv('dp_tabhidden',tabHidden)},[tabHidden]);useEffect(()=>{sv('dp_tabnames',tabNames)},[tabNames]);useEffect(()=>{sv('dp_hideinc',hideIncome)},[hideIncome]);useEffect(()=>{sv('dp_billdays',billDueDays)},[billDueDays]);useEffect(()=>{sv('dp_syncurl',syncUrl)},[syncUrl]);useEffect(()=>{sv('dp_synctok',syncToken)},[syncToken]);useEffect(()=>{sv('dp_syncpwd',syncPwd)},[syncPwd]);useEffect(()=>{sv('dp_synclastpush',syncLastPush)},[syncLastPush]);
   // Daily snapshot (once per day)
   useEffect(()=>{const today=new Date().toISOString().split('T')[0];const snaps=ld('dp_snapshots',{});if(!snaps[today]){const snap={};['dp_data','dp_goals','dp_cry','dp_wishes','dp_savdata','dp_profiles','dp_subvis','dp_subren','dp_simev','dp_simman','dp_simcats','dp_simret','dp_siminit'].forEach(k=>{try{const v=localStorage.getItem(k);snap[k]=v?JSON.parse(v):null}catch{}});const dates=Object.keys(snaps).sort().reverse();const trimmed={};dates.slice(0,29).forEach(d=>trimmed[d]=snaps[d]);trimmed[today]=snap;sv('dp_snapshots',trimmed)}},[]);
 
@@ -414,7 +420,9 @@ export default function App(){
   const uInc=(person,type,val)=>{setData(prev=>{const n=JSON.parse(JSON.stringify(prev));if(!n[yr])n[yr]=initY();if(!n[yr][mo])n[yr][mo]=initM();if(!n[yr][mo].income[person])n[yr][mo].income[person]={};n[yr][mo].income[person][type]=parseFloat(val)||0;return n})};
   const addCI=(l,a,p,c)=>{setData(prev=>{const n=JSON.parse(JSON.stringify(prev));if(!n[yr])n[yr]=initY();if(!n[yr][mo])n[yr][mo]=initM();n[yr][mo].customIncome.push({label:l,amount:parseFloat(a)||0,person:p,comment:c});return n})};
   const addUX=(d,a,p)=>{setData(prev=>{const n=JSON.parse(JSON.stringify(prev));if(!n[yr])n[yr]=initY();if(!n[yr][mo])n[yr][mo]=initM();n[yr][mo].unexpectedItems.push({desc:d,amount:parseFloat(a)||0,person:p});return n})};
-  const toggleClose=(m)=>{setData(prev=>{const n=JSON.parse(JSON.stringify(prev));if(!n[yr])n[yr]=initY();if(!n[yr][m])n[yr][m]=initM();n[yr][m].closed=!n[yr][m].closed;return n})};
+  const toggleClose=(m)=>{setData(prev=>{const n=JSON.parse(JSON.stringify(prev));if(!n[yr])n[yr]=initY();if(!n[yr][m])n[yr][m]=initM();n[yr][m].closed=!n[yr][m].closed;if(n[yr][m].closed&&syncUrl&&syncToken&&syncPwd){setTimeout(()=>doSyncPush(),500)}return n})};
+  const doSyncPush=async()=>{if(!syncUrl||!syncToken||!syncPwd){setSyncStatus('err:Nastavi URL, token in geslo v Nastavitvah.');return}setSyncStatus('syncing');try{const snap=collectSyncData();const v=await pushToCloud(snap,syncUrl,syncToken,syncPwd);setSyncLastPush(v);setSyncStatus('ok')}catch(e){setSyncStatus('err:'+e.message)}};
+  const doSyncPull=async()=>{if(!syncUrl||!syncToken||!syncPwd){setSyncStatus('err:Nastavi URL, token in geslo v Nastavitvah.');return}if(!confirm('Potegni iz oblaka? Lokalni podatki bodo prepisani!'))return;setSyncStatus('syncing');try{const snap=await pullFromCloud(syncUrl,syncToken,syncPwd);if(!snap){setSyncStatus('err:V oblaku ni podatkov.');return}applySyncData(snap);setSyncStatus('ok');setSMsg('Podatki potegnjeni iz oblaka. Stran se osvežuje…');setTimeout(()=>window.location.reload(),1500)}catch(e){setSyncStatus('err:'+e.message)}};
   const syncPlanToEntry=()=>{setData(prev=>{const n=JSON.parse(JSON.stringify(prev));if(!n[yr])n[yr]=initY();for(let m=0;m<12;m++){if(!n[yr][m])n[yr][m]=initM();CATS.forEach(cat=>{cat.subs.forEach(sub=>{if(md.subs?.[sub.id]?.plan)n[yr][m].subs[sub.id]={...n[yr][m].subs[sub.id],plan:md.subs[sub.id].plan}})})}return n})};
   const syncPctToPlan=(prof)=>{const p=prof||defProf;if(!p)return;const base=p.budget;effectiveAS.forEach(sub=>{const mode=p.pMd[sub.id]||"fixed";const target=mode==="pct"?Math.round(base*(p.bPct[sub.id]||0)/100):(p.pFx[sub.id]||0);uSub(sub.id,"plan",target)})};;
   const toggleSubVis=(subId)=>{setSubVis(prev=>({...prev,[subId]:!prev[subId]}))};
@@ -1333,6 +1341,39 @@ export default function App(){
           <div style={{marginBottom:12,maxHeight:180,overflowY:"auto"}}>{kuList.map((item,i)=><div key={i} style={{display:"flex",gap:6,alignItems:"center",padding:"3px 0"}}><input style={{...sI,flex:1,height:26,fontSize:15}} value={item} onChange={e=>{const n=[...kuList];n[i]=e.target.value;setKuList(n)}}/><button type="button" onClick={()=>setKuList(kuList.filter((_,j)=>j!==i))} style={{background:"none",border:"none",color:C.rd,cursor:"pointer",fontSize:15}}>✕</button></div>)}<button type="button" style={{...sB(false),fontSize:14,marginTop:4}} onClick={()=>setKuList([...kuList,'Nova trgovina'])}>+ Dodaj</button></div>
           <div style={{fontSize:15,fontWeight:600,marginBottom:6}}>Priložnosti (Wishlist)</div>
           <div>{occasions.map((occ,i)=><div key={i} style={{display:"flex",gap:6,alignItems:"center",padding:"3px 0"}}><input style={{...sI,flex:1,height:26,fontSize:15}} value={occ} onChange={e=>{const n=[...occasions];n[i]=e.target.value;setOccasions(n)}}/><button type="button" onClick={()=>setOccasions(occasions.filter((_,j)=>j!==i))} style={{background:"none",border:"none",color:C.rd,cursor:"pointer",fontSize:15}}>✕</button></div>)}<button type="button" style={{...sB(false),fontSize:14,marginTop:4}} onClick={()=>setOccasions([...occasions,'Nova priložnost'])}>+ Dodaj</button></div>
+        </SecBody>
+
+        {/* ☁ Cloud sync */}
+        <SecHdr k="sync" icon="☁" title="Sinhronizacija v oblak" sub={syncUrl?`Worker: ${syncUrl.replace('https://','').split('/')[0]}`:"Ni nastavljeno"}/>
+        <SecBody k="sync">
+          <div style={{fontSize:13,color:C.mt,marginBottom:10}}>
+            Šifrira vse podatke z AES-GCM (ključ iz gesla) preden jih pošlje na Cloudflare Worker.
+            Nastavi worker po navodilih v <code>worker/wrangler.toml</code>.
+          </div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:8}}>
+            <div><div style={{fontSize:13,color:C.mt,marginBottom:2}}>Worker URL</div>
+              <input style={{...sI,width:"100%",fontSize:13}} value={syncUrl} onChange={e=>setSyncUrl(e.target.value.trim())} placeholder="https://domaci-proracun-sync.USER.workers.dev"/></div>
+            <div><div style={{fontSize:13,color:C.mt,marginBottom:2}}>Sync token (SYNC_TOKEN)</div>
+              <input style={{...sI,width:"100%",fontSize:13}} type="password" value={syncToken} onChange={e=>setSyncToken(e.target.value.trim())} placeholder="tajni žeton"/></div>
+          </div>
+          <div style={{marginBottom:10}}><div style={{fontSize:13,color:C.mt,marginBottom:2}}>Družinsko šifrirno geslo (≠ login geslo)</div>
+            <input style={{...sI,width:"100%",fontSize:13}} type="password" value={syncPwd} onChange={e=>setSyncPwd(e.target.value)} placeholder="geslo za šifriranje podatkov"/>
+            <div style={{fontSize:12,color:C.mt,marginTop:2}}>Isti geslo mora biti na vseh napravah. Brez njega podatkov ni mogoče prebrati.</div>
+          </div>
+          <div style={{display:"flex",gap:6,flexWrap:"wrap",alignItems:"center"}}>
+            <button style={sB(true)} onClick={doSyncPush} disabled={syncStatus==='syncing'||!syncUrl}>
+              {syncStatus==='syncing'?'Sinhronizacija…':'↑ Potisni v oblak'}
+            </button>
+            <button style={sB(false)} onClick={doSyncPull} disabled={syncStatus==='syncing'||!syncUrl}>
+              ↓ Potegni iz oblaka
+            </button>
+            {syncLastPush&&<span style={{fontSize:12,color:C.mt}}>Zadnji push: {new Date(syncLastPush).toLocaleString("sl-SI")}</span>}
+          </div>
+          {syncStatus==='ok'&&<div style={{fontSize:13,color:C.gn,marginTop:6}}>✓ Sinhronizacija uspešna</div>}
+          {syncStatus.startsWith('err:')&&<div style={{fontSize:13,color:C.rd,marginTop:6}}>⚠ {syncStatus.slice(4)}</div>}
+          <div style={{fontSize:12,color:C.mt,marginTop:10,padding:"6px 8px",background:"#f9fafb",borderRadius:4}}>
+            Samodejni push se zgodi ob zaključitvi meseca (če je sync nastavljen).
+          </div>
         </SecBody>
 
         {/* 💾 Podatki */}

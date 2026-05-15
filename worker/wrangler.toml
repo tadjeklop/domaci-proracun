@@ -1,0 +1,12 @@
+name = "domaci-proracun-sync"
+main = "index.js"
+compatibility_date = "2024-09-01"
+
+# 1. Create KV namespace:  wrangler kv namespace create BUDGET_KV
+# 2. Paste the returned `id` below
+# 3. Set secret:           wrangler secret put SYNC_TOKEN
+# 4. Deploy:               wrangler deploy
+
+[[kv_namespaces]]
+binding = "BUDGET_KV"
+id = "REPLACE_WITH_YOUR_KV_NAMESPACE_ID"
