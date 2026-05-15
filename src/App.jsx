@@ -1498,6 +1498,36 @@ export default function App(){
             </div>;
           })}
           <div style={{padding:"8px 10px",background:"#fef9c3",borderRadius:4,fontSize:13,color:"#713f12"}}>💡 Postavke brez podatkov v letu lahko trajno skriješ.</div>
+
+          {/* Custom subs per built-in cat */}
+          <div style={{fontSize:14,fontWeight:700,color:C.tx,marginTop:14,marginBottom:6}}>Dodaj postavke v obstoječe kategorije</div>
+          {CATS.filter(c=>c.id!=="unexpected").map(cat=>{
+            const custom=customSubs[cat.id]||[];
+            return<div key={cat.id} style={{marginBottom:8}}>
+              <div style={{fontSize:13,fontWeight:600,color:C.bl,marginBottom:4}}>{cat.nm}</div>
+              {custom.map((cs,i)=><div key={cs.id} style={{display:"flex",gap:4,alignItems:"center",marginBottom:3}}>
+                <input style={{...sI,flex:1,height:24,fontSize:13}} value={cs.nm} onChange={e=>setCustomSubs(p=>{const n={...p,[cat.id]:[...p[cat.id]]};n[cat.id][i]={...n[cat.id][i],nm:e.target.value};return n})} placeholder="Ime postavke"/>
+                <button onClick={()=>setCustomSubs(p=>({...p,[cat.id]:(p[cat.id]||[]).filter((_,j)=>j!==i)}))} style={{background:"none",border:"none",color:C.rd,cursor:"pointer",fontSize:14}}>✕</button>
+              </div>)}
+              <button style={{...sB(false),fontSize:12,height:24,padding:"0 8px"}} onClick={()=>setCustomSubs(p=>({...p,[cat.id]:[...(p[cat.id]||[]),{id:`c_${cat.id}_${Date.now()}`,nm:'',dp:0}]}))}>+ Dodaj</button>
+            </div>;
+          })}
+
+          {/* New custom category groups */}
+          <div style={{fontSize:14,fontWeight:700,color:C.tx,marginTop:14,marginBottom:6}}>Nove kategorije po meri</div>
+          {customCatGroups.map((ccg,i)=><div key={ccg.id} style={{...sC,padding:8,marginBottom:6}}>
+            <div style={{display:"flex",gap:4,alignItems:"center",marginBottom:4}}>
+              <input style={{...sI,flex:1,height:24,fontSize:13}} value={ccg.nm} onChange={e=>setCustomCatGroups(p=>p.map((x,j)=>j===i?{...x,nm:e.target.value}:x))} placeholder="Ime kategorije"/>
+              <select style={{...sS,height:24,fontSize:12,width:90}} value={ccg.tp} onChange={e=>setCustomCatGroups(p=>p.map((x,j)=>j===i?{...x,tp:e.target.value}:x))}><option value="fixed">Fiksni</option><option value="var">Variabilni</option></select>
+              <button onClick={()=>setCustomCatGroups(p=>p.filter((_,j)=>j!==i))} style={{background:"none",border:"none",color:C.rd,cursor:"pointer",fontSize:13}}>🗑</button>
+            </div>
+            {(ccg.subs||[]).map((s,si)=><div key={s.id} style={{display:"flex",gap:4,alignItems:"center",marginBottom:3,paddingLeft:8}}>
+              <input style={{...sI,flex:1,height:22,fontSize:12}} value={s.nm} onChange={e=>setCustomCatGroups(p=>p.map((x,j)=>{if(j!==i)return x;const ns=[...x.subs];ns[si]={...ns[si],nm:e.target.value};return{...x,subs:ns}}))} placeholder="Ime postavke"/>
+              <button onClick={()=>setCustomCatGroups(p=>p.map((x,j)=>j===i?{...x,subs:x.subs.filter((_,k)=>k!==si)}:x))} style={{background:"none",border:"none",color:C.rd,cursor:"pointer",fontSize:13}}>✕</button>
+            </div>)}
+            <button style={{...sB(false),fontSize:12,height:22,padding:"0 6px"}} onClick={()=>setCustomCatGroups(p=>p.map((x,j)=>j===i?{...x,subs:[...(x.subs||[]),{id:`cg_${ccg.id}_${Date.now()}`,nm:'',dp:0}]}:x))}>+ Postavka</button>
+          </div>)}
+          <button style={{...sB(true),marginTop:4,fontSize:13}} onClick={()=>setCustomCatGroups(p=>[...p,{id:`ccg_${Date.now()}`,nm:'Nova kategorija',tp:'var',subs:[]}])}>+ Nova kategorija</button>
         </SecBody>
 
         {/* 📋 Dropdown seznami */}
