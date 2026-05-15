@@ -63,6 +63,7 @@ export const SYNC_KEYS = [
   'dp_it', 'dp_ku', 'dp_occasions', 'dp_billdays', 'dp_simman',
   'dp_simcats', 'dp_simret', 'dp_siminit', 'dp_simev',
   'dp_adminconf', 'dp_accounts', 'dp_audit',
+  'dp_nwassets', 'dp_nwliabs', 'dp_nwhist',
 ];
 
 export function collectSyncData() {

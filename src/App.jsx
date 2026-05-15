@@ -341,6 +341,9 @@ export default function App(){
   // Savings section
   const[savUnlocked,setSavUnlocked]=useState(false);const[savPwd,setSavPwd]=useState('');
   const[savData,setSavData]=useState(()=>ld('dp_savdata',{members:[]}));
+  const[nwAssets,setNwAssets]=useState(()=>ld('dp_nwassets',[]));
+  const[nwLiabs,setNwLiabs]=useState(()=>ld('dp_nwliabs',[]));
+  const[nwHist,setNwHist]=useState(()=>ld('dp_nwhist',[]));
   // Wishlist section
   const[wishes,setWishes]=useState(()=>ld('dp_wishes',[]));
   const[occasions,setOccasions]=useState(()=>ld('dp_occasions',["Rojstni dan","Novo leto","Božič","Obletnica","Drugi praznik"]));
@@ -365,7 +368,7 @@ export default function App(){
   const[sNP,setSNP]=useState('');const[sNP2,setSNP2]=useState('');const[sCP,setSCP]=useState('');const[sMsg,setSMsg]=useState('');
 
   // Persist
-  useEffect(()=>{sv('dp_data',data)},[data]);useEffect(()=>{sv('dp_log',cLog.slice(0,200))},[cLog]);useEffect(()=>{sv('dp_goals',goals)},[goals]);useEffect(()=>{sv('dp_cry',cryH)},[cryH]);useEffect(()=>{sv('dp_profiles',budgetProfiles)},[budgetProfiles]);useEffect(()=>{sv('dp_activeprofid',activeProfId)},[activeProfId]);useEffect(()=>{sv('dp_sv',savVis)},[savVis]);useEffect(()=>{sv('dp_savdata',savData)},[savData]);useEffect(()=>{sv('dp_pending',pendingRegs)},[pendingRegs]);useEffect(()=>{sv('dp_simman',simManual)},[simManual]);useEffect(()=>{sv('dp_simcats',simCats)},[simCats]);useEffect(()=>{sv('dp_simret',simReturn)},[simReturn]);useEffect(()=>{sv('dp_siminit',simInitial)},[simInitial]);useEffect(()=>{sv('dp_simev',simEvents)},[simEvents]);useEffect(()=>{sv('dp_adminviews',adminViews)},[adminViews]);useEffect(()=>{sv('dp_subvis',subVis)},[subVis]);useEffect(()=>{sv('dp_subren',subRename)},[subRename]);useEffect(()=>{sv('dp_customsubs',customSubs)},[customSubs]);useEffect(()=>{sv('dp_customcatgroups',customCatGroups)},[customCatGroups]);useEffect(()=>{sv('dp_suborder',subOrder)},[subOrder]);useEffect(()=>{sv('dp_subalerts',subAlerts)},[subAlerts]);useEffect(()=>{sv('dp_audit',auditLog.slice(0,500))},[auditLog]);useEffect(()=>{sv('dp_adminconf',adminConf)},[adminConf]);useEffect(()=>{sv('dp_it',itList)},[itList]);useEffect(()=>{sv('dp_ku',kuList)},[kuList]);useEffect(()=>{sv('dp_wishes',wishes)},[wishes]);useEffect(()=>{sv('dp_occasions',occasions)},[occasions]);useEffect(()=>{sv('dp_tabhidden',tabHidden)},[tabHidden]);useEffect(()=>{sv('dp_tabnames',tabNames)},[tabNames]);useEffect(()=>{sv('dp_hideinc',hideIncome)},[hideIncome]);useEffect(()=>{sv('dp_billdays',billDueDays)},[billDueDays]);useEffect(()=>{sv('dp_syncurl',syncUrl)},[syncUrl]);useEffect(()=>{sv('dp_synctok',syncToken)},[syncToken]);useEffect(()=>{sv('dp_syncpwd',syncPwd)},[syncPwd]);useEffect(()=>{sv('dp_synclastpush',syncLastPush)},[syncLastPush]);
+  useEffect(()=>{sv('dp_data',data)},[data]);useEffect(()=>{sv('dp_log',cLog.slice(0,200))},[cLog]);useEffect(()=>{sv('dp_goals',goals)},[goals]);useEffect(()=>{sv('dp_cry',cryH)},[cryH]);useEffect(()=>{sv('dp_profiles',budgetProfiles)},[budgetProfiles]);useEffect(()=>{sv('dp_activeprofid',activeProfId)},[activeProfId]);useEffect(()=>{sv('dp_sv',savVis)},[savVis]);useEffect(()=>{sv('dp_savdata',savData)},[savData]);useEffect(()=>{sv('dp_nwassets',nwAssets)},[nwAssets]);useEffect(()=>{sv('dp_nwliabs',nwLiabs)},[nwLiabs]);useEffect(()=>{sv('dp_nwhist',nwHist)},[nwHist]);useEffect(()=>{sv('dp_pending',pendingRegs)},[pendingRegs]);useEffect(()=>{sv('dp_simman',simManual)},[simManual]);useEffect(()=>{sv('dp_simcats',simCats)},[simCats]);useEffect(()=>{sv('dp_simret',simReturn)},[simReturn]);useEffect(()=>{sv('dp_siminit',simInitial)},[simInitial]);useEffect(()=>{sv('dp_simev',simEvents)},[simEvents]);useEffect(()=>{sv('dp_adminviews',adminViews)},[adminViews]);useEffect(()=>{sv('dp_subvis',subVis)},[subVis]);useEffect(()=>{sv('dp_subren',subRename)},[subRename]);useEffect(()=>{sv('dp_customsubs',customSubs)},[customSubs]);useEffect(()=>{sv('dp_customcatgroups',customCatGroups)},[customCatGroups]);useEffect(()=>{sv('dp_suborder',subOrder)},[subOrder]);useEffect(()=>{sv('dp_subalerts',subAlerts)},[subAlerts]);useEffect(()=>{sv('dp_audit',auditLog.slice(0,500))},[auditLog]);useEffect(()=>{sv('dp_adminconf',adminConf)},[adminConf]);useEffect(()=>{sv('dp_it',itList)},[itList]);useEffect(()=>{sv('dp_ku',kuList)},[kuList]);useEffect(()=>{sv('dp_wishes',wishes)},[wishes]);useEffect(()=>{sv('dp_occasions',occasions)},[occasions]);useEffect(()=>{sv('dp_tabhidden',tabHidden)},[tabHidden]);useEffect(()=>{sv('dp_tabnames',tabNames)},[tabNames]);useEffect(()=>{sv('dp_hideinc',hideIncome)},[hideIncome]);useEffect(()=>{sv('dp_billdays',billDueDays)},[billDueDays]);useEffect(()=>{sv('dp_syncurl',syncUrl)},[syncUrl]);useEffect(()=>{sv('dp_synctok',syncToken)},[syncToken]);useEffect(()=>{sv('dp_syncpwd',syncPwd)},[syncPwd]);useEffect(()=>{sv('dp_synclastpush',syncLastPush)},[syncLastPush]);
   // Daily snapshot (once per day)
   useEffect(()=>{const today=new Date().toISOString().split('T')[0];const snaps=ld('dp_snapshots',{});if(!snaps[today]){const snap={};['dp_data','dp_goals','dp_cry','dp_wishes','dp_savdata','dp_profiles','dp_subvis','dp_subren','dp_simev','dp_simman','dp_simcats','dp_simret','dp_siminit'].forEach(k=>{try{const v=localStorage.getItem(k);snap[k]=v?JSON.parse(v):null}catch{}});const dates=Object.keys(snaps).sort().reverse();const trimmed={};dates.slice(0,29).forEach(d=>trimmed[d]=snaps[d]);trimmed[today]=snap;sv('dp_snapshots',trimmed)}},[]);
 
@@ -528,6 +531,17 @@ export default function App(){
 
   const pieData=visibleCats.map((c,i)=>({name:c.nm.split(" ")[0],value:cT(md,c,'actual'),color:CL[i%CL.length]})).filter(d=>d.value>0);
   const trendData=MS.map((m,i)=>{const mdata=yd[i]||initM();return{name:m,Prihodki:iT(mdata),Odhodki:efxT(mdata,'actual')+evrT(mdata,'actual')+uxtT(mdata),closed:mdata.closed}});
+
+  useEffect(()=>{
+    if(!savUnlocked) return;
+    const today=new Date().toISOString().split('T')[0];
+    if(nwHist.length>0&&nwHist[nwHist.length-1].date===today) return;
+    const savT=savData.members.reduce((s,m)=>s+m.sources.reduce((ss,src)=>ss+(src.amount||0),0),0);
+    const assT=nwAssets.reduce((s,a)=>s+(a.value||0),0);
+    const liabT=nwLiabs.reduce((s,l)=>s+(l.value||0),0);
+    const nw=savT+cryptoVal+assT-liabT;
+    setNwHist(h=>[...h,{date:today,nw}].slice(-60));
+  },[savUnlocked,savData,nwAssets,nwLiabs,cryptoVal]);
 
   const navP=()=>{if(mo===0){setMo(11);setYr(y=>y-1)}else setMo(m=>m-1)};
   const navN=()=>{if(mo===11){setMo(0);setYr(y=>y+1)}else setMo(m=>m+1)};
@@ -1226,6 +1240,70 @@ export default function App(){
       {!savUnlocked?<div style={{...sC,display:"flex",flexDirection:"column",alignItems:"center",padding:"3rem",textAlign:"center"}}><div style={{fontSize:44,marginBottom:12}}>🏦</div><div style={{fontSize:16,fontWeight:700,marginBottom:12}}>Varčevanje</div><div style={{fontSize:18,color:C.mt,marginBottom:12}}>Zaščiteno z geslom. Nastavi ga v Nastavitvah.</div><div style={{display:"flex",gap:6}}><input type="password" style={{...sI,width:160}} value={savPwd} onChange={e=>setSavPwd(e.target.value)} onKeyDown={e=>{if(e.key==="Enter"){const s=ld('dp_savpwd','');if(!s||savPwd===s)setSavUnlocked(true)}}} placeholder="Geslo"/><button style={sB(true)} onClick={()=>{const s=ld('dp_savpwd','');if(!s||savPwd===s)setSavUnlocked(true)}}>Odkleni</button></div></div>
       :<div>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}><h2 style={{fontSize:24,fontWeight:700,margin:0}}>Varčevanje — družinski prihranki</h2><button style={{...sB(false),fontSize:16}} onClick={()=>{setSavUnlocked(false);setSavPwd('')}}>Zakleni 🔒</button></div>
+
+        {/* NET WORTH SUMMARY */}
+        {(()=>{
+          const savT=savData.members.reduce((s,m)=>s+m.sources.reduce((ss,src)=>ss+(src.amount||0),0),0);
+          const assT=nwAssets.reduce((s,a)=>s+(a.value||0),0);
+          const liabT=nwLiabs.reduce((s,l)=>s+(l.value||0),0);
+          const totalAss=savT+cryptoVal+assT;
+          const nw=totalAss-liabT;
+          const [showNWEdit,setShowNWEdit]=React.useState(false);
+          const histMin=nwHist.length>1?Math.min(...nwHist.map(h=>h.nw)):0;
+          const histMax=nwHist.length>1?Math.max(...nwHist.map(h=>h.nw)):nw;
+          const nwDelta=nwHist.length>1?nw-nwHist[0].nw:0;
+          return<>
+            <div style={{...sM,textAlign:"center",marginBottom:10,borderLeft:`4px solid ${nw>=0?C.bl:C.rd}`}}>
+              <div style={{fontSize:13,color:C.mt,textTransform:"uppercase",letterSpacing:0.5}}>Neto vrednost</div>
+              <div style={{fontSize:40,fontWeight:800,color:nw>=0?C.bl:C.rd}}>{fmt(nw)}</div>
+              {nwHist.length>1&&<div style={{fontSize:14,color:nwDelta>=0?C.gn:C.rd,marginTop:2}}>{nwDelta>=0?"+":""}{fmt(nwDelta)} od prvega merenja</div>}
+              <div style={{display:"flex",justifyContent:"center",gap:16,marginTop:6,fontSize:14,color:C.mt}}>
+                <span>Premoženje: <strong style={{color:C.gn}}>{fmt(totalAss)}</strong></span>
+                <span>Obveznosti: <strong style={{color:C.rd}}>{fmt(liabT)}</strong></span>
+              </div>
+            </div>
+            {/* Asset/liability breakdown */}
+            <div style={{display:"grid",gridTemplateColumns:isMob?"1fr":"1fr 1fr",gap:8,marginBottom:10}}>
+              <div style={sC}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
+                  <span style={{fontSize:15,fontWeight:700,color:C.gn}}>Premoženje</span>
+                  <button onClick={()=>setShowNWEdit(v=>!v)} style={{fontSize:13,padding:"1px 8px",borderRadius:4,border:`1px solid ${C.bd}`,background:showNWEdit?"#dbeafe":"#f5f5f0",color:C.mt,cursor:"pointer"}}>{showNWEdit?"Zapri":"⚙ Uredi"}</button>
+                </div>
+                <div style={{fontSize:14,padding:"4px 0",display:"flex",justifyContent:"space-between",borderBottom:`1px solid ${C.fn}`}}><span style={{color:"#555"}}>Prihranki</span><strong>{fmt(savT)}</strong></div>
+                {cryptoVal>0&&<div style={{fontSize:14,padding:"4px 0",display:"flex",justifyContent:"space-between",borderBottom:`1px solid ${C.fn}`}}><span style={{color:"#555"}}>Kripto</span><strong>{fmt(cryptoVal)}</strong></div>}
+                {nwAssets.map((a,i)=><div key={i} style={{fontSize:14,padding:"4px 0",display:"flex",justifyContent:"space-between",alignItems:"center",borderBottom:`1px solid ${C.fn}`}}>
+                  {showNWEdit?<><input style={{...sI,flex:1,height:24,fontSize:13}} defaultValue={a.name} onBlur={e=>setNwAssets(p=>p.map((x,j)=>j===i?{...x,name:e.target.value}:x))} placeholder="Naziv"/><input type="number" style={{...sI,width:80,height:24,fontSize:13,textAlign:"right"}} defaultValue={a.value} onBlur={e=>setNwAssets(p=>p.map((x,j)=>j===i?{...x,value:parseFloat(e.target.value)||0}:x))} placeholder="€"/><button onClick={()=>setNwAssets(p=>p.filter((_,j)=>j!==i))} style={{background:"none",border:"none",color:C.rd,cursor:"pointer",fontSize:15}}>✕</button></>
+                  :<><span style={{color:"#555"}}>{a.name||"—"}</span><strong>{fmt(a.value)}</strong></>}
+                </div>)}
+                {showNWEdit&&<button style={{...sB(false),fontSize:13,marginTop:4,height:26}} onClick={()=>setNwAssets(p=>[...p,{id:Date.now(),name:"",value:0}])}>+ Dodaj sredstvo</button>}
+                <div style={{borderTop:`2px solid ${C.gn}`,marginTop:4,paddingTop:4,display:"flex",justifyContent:"space-between",fontWeight:700,fontSize:15}}><span>Skupaj</span><span style={{color:C.gn}}>{fmt(totalAss)}</span></div>
+              </div>
+              <div style={sC}>
+                <div style={{fontSize:15,fontWeight:700,color:C.rd,marginBottom:6}}>Obveznosti</div>
+                {nwLiabs.map((l,i)=><div key={i} style={{fontSize:14,padding:"4px 0",display:"flex",justifyContent:"space-between",alignItems:"center",borderBottom:`1px solid ${C.fn}`}}>
+                  {showNWEdit?<><input style={{...sI,flex:1,height:24,fontSize:13}} defaultValue={l.name} onBlur={e=>setNwLiabs(p=>p.map((x,j)=>j===i?{...x,name:e.target.value}:x))} placeholder="Naziv"/><input type="number" style={{...sI,width:80,height:24,fontSize:13,textAlign:"right"}} defaultValue={l.value} onBlur={e=>setNwLiabs(p=>p.map((x,j)=>j===i?{...x,value:parseFloat(e.target.value)||0}:x))} placeholder="€"/><button onClick={()=>setNwLiabs(p=>p.filter((_,j)=>j!==i))} style={{background:"none",border:"none",color:C.rd,cursor:"pointer",fontSize:15}}>✕</button></>
+                  :<><span style={{color:"#555"}}>{l.name||"—"}</span><strong>{fmt(l.value)}</strong></>}
+                </div>)}
+                {nwLiabs.length===0&&!showNWEdit&&<div style={{fontSize:14,color:C.mt,padding:"8px 0"}}>Ni obveznosti.</div>}
+                {showNWEdit&&<button style={{...sB(false),fontSize:13,marginTop:4,height:26}} onClick={()=>setNwLiabs(p=>[...p,{id:Date.now(),name:"",value:0}])}>+ Dodaj obveznost</button>}
+                <div style={{borderTop:`2px solid ${C.rd}`,marginTop:4,paddingTop:4,display:"flex",justifyContent:"space-between",fontWeight:700,fontSize:15}}><span>Skupaj</span><span style={{color:C.rd}}>{fmt(liabT)}</span></div>
+              </div>
+            </div>
+            {/* History chart */}
+            {nwHist.length>1&&<div style={sC}>
+              <div style={{fontSize:15,fontWeight:600,color:C.sb,marginBottom:6}}>Trend neto vrednosti</div>
+              <ResponsiveContainer width="100%" height={100}>
+                <AreaChart data={nwHist} margin={{top:4,right:4,left:0,bottom:0}}>
+                  <XAxis dataKey="date" tick={{fontSize:11}} tickFormatter={d=>d.slice(5)} axisLine={false} tickLine={false}/>
+                  <YAxis hide domain={[Math.min(histMin*0.95,histMin-1000), Math.max(histMax*1.05,histMax+1000)]}/>
+                  <Tooltip formatter={v=>fmt(v)} labelFormatter={d=>d} contentStyle={{fontSize:13}}/>
+                  <Area type="monotone" dataKey="nw" stroke={C.bl} fill="#dbeafe" strokeWidth={2} dot={false}/>
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>}
+          </>;
+        })()}
+
         {/* Total */}
         <div style={{...sM,textAlign:"center",marginBottom:14}}><div style={{fontSize:16,color:C.mt,textTransform:"uppercase"}}>Skupni prihranki</div><div style={{fontSize:36,fontWeight:800,color:C.gn}}>{fmt(savData.members.reduce((s,m)=>s+m.sources.reduce((ss,src)=>ss+(src.amount||0),0),0))}</div></div>
         {/* Members */}
