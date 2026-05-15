@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, Component } from "react";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, LineChart, Line, Legend, AreaChart, Area } from "recharts";
 import * as XLSX from 'xlsx';
+import BankImport from './components/BankImport.jsx';
 
 // ===== ERROR BOUNDARY =====
 class EB extends Component{constructor(p){super(p);this.state={e:null}}static getDerivedStateFromError(e){return{e}}render(){if(this.state.e)return<div style={{padding:'2rem',textAlign:'center'}}><h2>Napaka</h2><p>{this.state.e?.message}</p><button onClick={()=>{this.setState({e:null});window.location.reload()}} style={aBtn}>Ponovno naloži</button></div>;return this.props.children}}
@@ -287,7 +288,7 @@ export default function App(){
   const[scratchBudget,setScratchBudget]=useState(0);
   const[cryU,setCryU]=useState(false);const[cryP,setCryP]=useState("");
   const[cryH,setCryH]=useState(()=>ld('dp_cry',[{coin:"BTC",amount:0.05,avgPrice:45000},{coin:"ETH",amount:1.2,avgPrice:3200}]));
-  const[compYr,setCompYr]=useState(null);const[showImp,setShowImp]=useState(false);const[impYr,setImpYr]=useState(2025);
+  const[compYr,setCompYr]=useState(null);const[showImp,setShowImp]=useState(false);const[showBankImp,setShowBankImp]=useState(false);const[impYr,setImpYr]=useState(2025);
   const[impPrev,setImpPrev]=useState(null);const[impLog,setImpLog]=useState([]);
   const[showNG,setShowNG]=useState(false);const[showSavCfg,setShowSavCfg]=useState(false);
   const[savVis,setSavVis]=useState(()=>ld('dp_sv',["vacSav","etf","tradeRep"]));
@@ -549,7 +550,8 @@ export default function App(){
         <h2 style={{fontSize:24,fontWeight:700,margin:0}}>{tabNames.dash||"Pregled"}</h2>
         <div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap"}}>
           {YPk}
-          <button onClick={()=>setShowImp(!showImp)} style={{...sB(false),fontSize:16}}>Uvoz</button>
+          <button onClick={()=>{setShowBankImp(s=>!s);setShowImp(false)}} style={{...sB(showBankImp),fontSize:16}}>Bančni izpisek</button>
+          <button onClick={()=>{setShowImp(!showImp);setShowBankImp(false)}} style={{...sB(false),fontSize:16}}>Uvoz Excel</button>
           <button onClick={doExport} style={{...sB(false),fontSize:16}}>Izvoz</button>
           <button onClick={()=>setEditPlan(!editPlan)} style={{...sB(editPlan),fontSize:16}}>{editPlan?"Zaključi urejanje":"Uredi plan"}</button>
           {editPlan&&<button onClick={syncPlanToEntry} style={{...sB(true),fontSize:16,background:C.gn}}>Sinhroniziraj → mesečni vnos</button>}
@@ -566,7 +568,33 @@ export default function App(){
         <span>⚠ Varnostna kopija ni bila narejena že 14+ dni. Priporočamo izvoz.</span>
         <button style={{...sB(true),height:24,fontSize:16,background:"#d97706"}} onClick={()=>{createBackup();localStorage.setItem('dp_lastbackup',String(Date.now()))}}>Varnostna kopija</button>
       </div>}
-      {/* Import */}
+      {/* Bančni izpisek uvoz */}
+      {showBankImp&&<BankImport
+        allSubs={AS}
+        mo={mo} yr={yr}
+        onImport={(items)=>{
+          setData(prev=>{
+            const n=JSON.parse(JSON.stringify(prev));
+            const importDate=new Date().toLocaleDateString("sl-SI");
+            items.forEach(r=>{
+              const iy=r.date&&r.date.length>=4?parseInt(r.date.substring(0,4)):yr;
+              const im=r.mo>=0?r.mo:mo;
+              if(!n[iy])n[iy]=initY();
+              if(!n[iy][im])n[iy][im]=initM();
+              if(!n[iy][im].subs[r.subId])n[iy][im].subs[r.subId]={plan:0,actual:0,transactions:[],comment:""};
+              if(!Array.isArray(n[iy][im].subs[r.subId].transactions))n[iy][im].subs[r.subId].transactions=[];
+              const amt=Math.abs(r.amount);
+              const shortDate=r.date?r.date.split('-').reverse().slice(0,2).join('.'):importDate;
+              n[iy][im].subs[r.subId].transactions.push({id:Date.now()+Math.random(),amt,comment:`📥 ${shortDate} ${r.desc.substring(0,30)}`,imported:true});
+              n[iy][im].subs[r.subId].actual=n[iy][im].subs[r.subId].transactions.reduce((s,t)=>s+(t.amt||t),0);
+            });
+            return n;
+          });
+          setShowBankImp(false);
+        }}
+        onClose={()=>setShowBankImp(false)}
+      />}
+      {/* Import Excel */}
       {showImp&&<div style={{...sC,background:"#f0f7ff",border:"1px dashed #93c5fd"}}><div style={{fontSize:18,fontWeight:600,color:C.bl,marginBottom:4}}>Uvozi iz Excel</div><div style={{display:"flex",gap:8,alignItems:"center",marginBottom:8,flexWrap:"wrap"}}><span style={{fontSize:17}}>V leto:</span><select style={{...sS,width:70}} value={impYr} onChange={e=>setImpYr(parseInt(e.target.value))}>{[2020,2021,2022,2023,2024,2025,2026,2027,2028].map(y=><option key={y} value={y}>{y}</option>)}</select><input type="file" accept=".xlsx,.xls" onChange={handleImpFile} style={{fontSize:18}}/></div>{impPrev&&<div style={{border:"1px solid #e8e6e1",borderRadius:6,padding:8,background:"#fff",maxHeight:160,overflowY:"auto",marginBottom:8}}><div style={{fontSize:17,fontWeight:600,marginBottom:4}}>Predogled ({impPrev.preview.length} vnosov → {impYr}):</div><table style={{width:"100%",fontSize:16,borderCollapse:"collapse"}}><thead><tr><th style={{textAlign:"left",padding:2}}>Mesec</th><th style={{textAlign:"left",padding:2}}>Postavka</th><th style={{textAlign:"right",padding:2}}>Izvedba</th></tr></thead><tbody>{impPrev.preview.slice(0,20).map((r,i)=><tr key={i}><td style={{padding:2}}>{r.month}</td><td style={{padding:2}}>{r.label.substring(0,25)}</td><td style={{textAlign:"right",padding:2}}>{fmt(r.actual)}</td></tr>)}</tbody></table><div style={{display:"flex",gap:6,marginTop:6}}><button style={sB(true)} onClick={doImport}>Potrdi uvoz</button><button style={sB(false)} onClick={()=>setImpPrev(null)}>Prekliči</button></div></div>}{impLog.map((l,i)=><div key={i} style={{fontSize:17,color:l.type==="ok"?C.gn:C.rd}}>{l.msg}</div>)}</div>}
 
       {/* KPI grid: left=Prihodki/Odhodki/Razlika, right=Fiksni/Variabilni/Varčevanje */}
