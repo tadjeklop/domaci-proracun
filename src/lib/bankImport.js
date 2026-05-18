@@ -125,9 +125,9 @@ function detectColumns(headers) {
   const find = (kws) => h.findIndex(col => kws.some(k => col.includes(k)));
   return {
     date:   find(['datum', 'date', 'val.datum', 'booking']),
-    desc:   find(['opis', 'naziv', 'partner', 'namen', 'description', 'details', 'transakcija', 'besedilo']),
-    debit:  find(['breme', 'debet', 'debit', 'odhodek', 'znesek breme']),
-    credit: find(['dobro', 'kredit', 'credit', 'prihodek', 'dobropis']),
+    desc:   find(['opis', 'naziv', 'partner', 'namen', 'description', 'details', 'transakcija', 'besedilo', 'payee', 'merchant', 'name', 'memo']),
+    debit:  find(['breme', 'debet', 'debit', 'odhodek', 'znesek breme', 'outflow', 'out (']),
+    credit: find(['dobro', 'kredit', 'credit', 'prihodek', 'dobropis', 'inflow', 'in (']),
     amount: find(['znesek', 'amount', 'vsota', 'znesek eur', 'znesek transakcije', 'vrednost']),
   };
 }

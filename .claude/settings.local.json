@@ -1,0 +1,30 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find '/c/Users/tadej/Desktop/claude/app domački proračun/deploy-kit/src' -type f | sed 's|.*/src/||' | sort)",
+      "Bash(ls -la /c/Users/tadej/Desktop/claude/ 2>&1 | head -20)",
+      "Bash(python3 -c \"import os; print\\(os.listdir\\('./app domački proračun/deploy-kit/'\\)\\)\")",
+      "Bash(find \"app\"* -maxdepth 2 -type d)",
+      "Bash(find \"app\"*/deploy-kit/src -type f)",
+      "Bash(find \"app\"*/src -maxdepth 3 -type f)",
+      "Bash(find \"app\"*/deploy-kit/src -type f -o -type d)",
+      "Bash(find \"app\"*/src -type f -o -type d)",
+      "Bash(npm run *)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(npm install *)",
+      "Bash(node -e ' *)",
+      "Bash(npx vite *)",
+      "mcp__Claude_in_Chrome__tabs_context_mcp",
+      "Bash(taskkill /F /IM node.exe)",
+      "Bash(Start-Sleep -Seconds 1)",
+      "Bash(Write-Host \"Processes killed\")",
+      "PowerShell(taskkill /F /IM node.exe 2>&1)",
+      "mcp__Claude_Preview__preview_start",
+      "Bash(Get-Content \"C:\\\\Users\\\\tadej\\\\Desktop\\\\claude\\\\app domači proračun\\\\deploy-kit\\\\.claude\\\\worktrees\\\\hardcore-carson-dfe2d6\\\\src\\\\App.jsx\")",
+      "Bash(Measure-Object -Line)",
+      "PowerShell($f = \"C:\\\\Users\\\\tadej\\\\Desktop\\\\claude\\\\app domači proračun\\\\deploy-kit\\\\.claude\\\\worktrees\\\\hardcore-carson-dfe2d6\\\\src\\\\App.jsx\"; \\(Get-Item $f\\).LastWriteTime = Get-Date; Write-Output \"touched: $\\(\\(Get-Item $f\\).LastWriteTime\\)\")",
+      "Bash(dir \"C:\\\\Users\\\\tadej\\\\Desktop\\\\claude\\\\app domački proračun\\\\deploy-kit\\\\.claude\\\\worktrees\\\\hardcore-carson-dfe2d6\\\\src\\\\App.jsx\")"
+    ]
+  }
+}

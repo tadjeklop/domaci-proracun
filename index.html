@@ -4,16 +4,33 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Domači Proračun</title>
-    <meta name="theme-color" content="#2563eb" />
+    <meta name="theme-color" content="#d97757" />
     <meta name="description" content="Zasebni upravljalnik družinskega proračuna" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="Proračun" />
     <link rel="apple-touch-icon" href="/pwa-192.svg" />
     <link rel="icon" href="/pwa-192.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400&display=swap" rel="stylesheet" />
     <style>
       * { margin: 0; padding: 0; box-sizing: border-box; }
-      body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: #f8f7f4; }
+      body {
+        font-family: 'Nunito', 'Segoe UI', system-ui, -apple-system, sans-serif;
+        background: #faf6f1;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        color: #3a322c;
+      }
+      ::selection { background: #f2c9b6; }
+      /* Warm, soft scrollbars */
+      ::-webkit-scrollbar { width: 10px; height: 10px; }
+      ::-webkit-scrollbar-track { background: transparent; }
+      ::-webkit-scrollbar-thumb { background: #e0d4c6; border-radius: 6px; border: 2px solid #faf6f1; }
+      ::-webkit-scrollbar-thumb:hover { background: #d0c0ac; }
+      @keyframes dpFadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+      @keyframes dpPop { 0% { transform: scale(0.94); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
     </style>
   </head>
   <body>
